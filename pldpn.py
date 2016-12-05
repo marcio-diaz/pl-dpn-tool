@@ -31,98 +31,8 @@ SpawnAction = namedtuple("SpawnAction", ["procedure", "priority"])
 GlobalAction = namedtuple("GlobalAction", ["action", "variable"])
 ReturnAction = namedtuple("Return", [])
 
-class DPN:
-    def __init__(self, pldpn, all_pl_structures):
-        function_priority = {'main':1}
-        for rule in pldpn.rules:
-            start, label, end = rule
-            action = label[0]
-            if action == 'spawn':
-                function = label[1]
-                priority = label[2]
-                function_priority[function] = priority
-        self.rules = set()
-        print("Rules size: ", len(pldpn.rules))
-        for i, rule in enumerate(pldpn.rules):
-            print("Rule ", i, ". Structures size: ", len(all_pl_structures),
-                  len(self.rules))
-            for j, structure in enumerate(all_pl_structures):
-                start, label, end = rule
-                action = label[0]
-                function = start.split('_')[0]
-                priority = function_priority[function]
-                if action == 'none' or action == 'read' or action == 'write':
-                    new_dpn_rule_l=(
-                        ControlState(priority, ('l',),
-                               update(priority, label, structure)),
-                        start, label, ControlState(priority, ('l',), structure),
-                        end)
-                    new_dpn_rule_0 = (
-                        ControlState(priority, tuple(),
-                                     update(priority, label, structure)),
-                        start, label, ControlState(priority, tuple(), structure),
-                        end)
-                    self.rules.add(new_dpn_rule_l)
-                    self.rules.add(new_dpn_rule_0)
-                elif action == 'spawn':
-                    function_spawned_name = label[1]
-                    function_spawned_priority = label[2]
-                    pl_structure = PLStructure(ltp=math.inf,
-                                               hfp=function_spawned_priority,
-                                               gr=tuple(), ga=tuple(), la=tuple())
-                    new_dpn_rule_l = (
-                        ControlState(priority, ('l',),
-                               update(priority, label, structure)),
-                        start, ('spawn',),
-                        ControlState(0, ('l',), structure),
-                        end,
-                        ControlState(function_spawned_priority, tuple(),
-                                     pl_structure),
-                        function_spawned_name + '_0'
-                    )
-                    new_dpn_rule_0 = (
-                        ControlState(priority, tuple(),
-                                     update(priority, label, structure)),
-                        start, ('spawn',),
-                        ControlState(0, tuple(), structure), end,
-                        ControlState(function_spawned_priority, tuple(),
-                                     pl_structure),
-                        function_spawned_name + '_0'
-                    )
-                    self.rules.add(new_dpn_rule_l)
-                    self.rules.add(new_dpn_rule_0)                    
-                elif action == 'ret':
-                    new_dpn_rule_l=(
-                        ControlState(priority, ('l',),
-                                     update(priority, label, structure)),
-                        start, label,
-                        ControlState(0, ('l',), structure), end
-                    )
-                    new_dpn_rule_0=(
-                        ControlState(priority, tuple(),
-                                     update(priority, label, structure)),
-                        start, label,
-                        ControlState(0, tuple(), structure), end
-                    )
-                    self.rules.add(new_dpn_rule_l)
-                    self.rules.add(new_dpn_rule_0)
-                elif action == 'rel':
-                    new_dpn_rule_l=(
-                        ControlState(priority, ('l',),
-                                     update(priority, label, structure)),
-                        start, label,
-                        ControlState(priority, tuple(), structure), end
-                    )
-                    self.rules.add(new_dpn_rule_l)
-                elif action == 'acq':
-                    new_dpn_rule_l=(
-                        ControlState(priority, tuple(),
-                                     update(priority, label, structure)),
-                        start, label,
-                        ControlState(priority, ('l',), structure), end
-                    )
-                    self.rules.add(new_dpn_rule_l)
-                    
+function_priority = {'main': 1}
+
 
 def update(priority, label, pls):
     if pls == False:
@@ -402,8 +312,10 @@ def exist_path(mautomaton, start_node, target_path, end_node):
 
 
 def target(rule):
-    label = rule[2]
-    action = label[0]
+    prev_top_stack = rule.prev_top_stack
+    label = rule.label
+    next_top_stack = rule.next_top_stack
+    
     if action != 'spawn':
         target_control_state = rule[3]
         target_stack_letter = rule[4]
