@@ -216,40 +216,6 @@ def make_pldpn(procedure_name, procedure_body):
     
     return control_states, gamma, rules
 
-def get_all_pl_structures(priorities, locks):
-    # P, P, l->l, l->l, (a,l,p,p)
-    lock_edges = set()
-    for lock1 in locks:
-        for lock2 in locks:
-            if lock1 != lock2:
-                lock_edges.add((lock1, lock2))
-
-    actions = ['acq', 'rel', 'usg']
-    lock_action_tuples = set()
-    priorities_0 = priorities | set([0])
-    priorities_inf = priorities | set([math.inf])    
-    priorities_0_inf = priorities | set([0, math.inf])
-    for act in actions:
-        for lock in locks:
-            for priority1 in priorities:
-                for priority2 in priorities_0:                
-                    lock_action_tuples.add((act, lock, priority1, priority2))
-
-    all_pl_structs = set()
-    for priority1 in priorities_inf:
-        for priority2 in priorities_0:
-            for lock_edge_set1 in powerset(lock_edges):
-                for lock_edge_set2 in powerset(lock_edges):
-                    for lock_action_tuple in powerset(lock_action_tuples):
-                        if len([t for t in lock_action_tuple \
-                                if t[0] == 'rel' or t[0] == 'acq']) > 1:
-                            continue
-                        pls = PLStructure(priority1, priority2,
-                               lock_edge_set1, lock_edge_set2,
-                               lock_action_tuple)
-                        all_pl_structs.add(pls)
-    return all_pl_structs
-
 
 def get_children_depth(father, edges, depth):
     stack = [(father, 0)]
