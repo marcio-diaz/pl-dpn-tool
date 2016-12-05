@@ -217,18 +217,21 @@ def make_pldpn(procedure_name, procedure_body):
     return control_states, gamma, rules
 
 
-def get_children_depth(father, edges, depth):
-    stack = [(father, 0)]
+ChildPath = namedtuple("ChildPath", ["child", "path"])
+
+def get_children_depth(father, edges, max_depth):
+    stack = [ChildPath(child=father, path=tuple())]
     children = set()
     while stack:
-        node, dd = stack.pop()
+        child_path = stack.pop()
         for edge in edges:
-            if node == edge.start:
-                if dd+1 < depth:
-                    stack.append((edge.end, dd+1))
+            if child_path.child == edge.start:
+                if len(child_path.path) + 1 < depth:
+                    stack.append(ChildPath(child=edge.end,
+                                           path=child_path.path + (edge.label,)))
                 else:
-                    children.add(edge.end)
-    return children
+                    children.add(child)
+    return tuple(children)
 
 
         
@@ -241,7 +244,7 @@ def exist_path(mautomaton, start_node, target_path, end_node):
         if vertex not in visited:
             visited.add(vertex)
             vertex_children = get_children(vertex, mautomaton.edges)
-
+            
             for child_label_vertex in vertex_children:
                 child_label, child_vertex = child_label_vertex
 
@@ -297,42 +300,39 @@ def target(rule):
 def pre_star(pldpn, mautomaton):
     new_edges = set()
     while True:
-        edges_size = len(new_edges)
-        
-        for rule in pldpn.rules:
-            prev_top_stack = rule.prev_top_stack
-            label = rule.label
-            next_top_stack = rule.next_top_stack
-            
-            for start_node in mautomaton.source_nodes:
-                if isinstance(label, SpawnAction):
-                    end_nodes = get_children_depth(start_node, mautomaton.edges, 2)
-                else:
-                    end_nodes = get_children_depth(start_node, mautomaton.edges, 4)
-                for end_node in end_nodes:
-                    if start_node == end_node:
-                        continue
-                    target_rule = target(rule)
-                    node_path, found = exist_path(mautomaton, start_node,
-                                                  target(rule), end_node)
-                    if found:
-                        start_node_with_cs = copy.copy(start_node)
-                        start_node_with_cs.control_state = rule[0][0]
-                        start_node_with_cs.pl_structure = rule[0][1]
-                        priority = start_node_with_cs.control_state.priority
-                        label = rule[2]
-                        new_edge0 = MAEdge(start_node, rule[0][0], 
-                                           start_node_with_cs, rule[0][1])
-                        new_edge1 = MAEdge(start_node_with_cs, rule[1], end_node)
-                        str_new_edge = str(new_edge1)
-                        if str_new_edge not in new_edges:
-                            print("Adding edge {}".format(str(new_edge0)))
-                            print("Adding edge {}".format(str(new_edge1)))
-                            mautomaton.edges.add(new_edge0)
-                            new_edges.add(str(new_edge0))
-                            mautomaton.edges.add(new_edge1)
-                            new_edges.add(str(new_edge1))
-                            
+        new_edges_size = len(new_edges)
+
+        for start_node in mautomaton.source_nodes:
+            # First we try to match with a non-spawning rule.
+            end_nodes = get_children_depth(start_node, mautomaton.edges, 2)
+            for end_node in end_nodes_and_paths:
+                child = end_node.child
+                path = end_node.path
+                print(end_node)
+                target_rule = target(rule)
+                node_path, found = exist_path(mautomaton, start_node,
+                                              target(rule), end_node)
+                if found:
+                    start_node_with_cs = copy.copy(start_node)
+                    start_node_with_cs.control_state = rule[0][0]
+                    start_node_with_cs.pl_structure = rule[0][1]
+                    priority = start_node_with_cs.control_state.priority
+                    label = rule[2]
+                    new_edge0 = MAEdge(start_node, rule[0][0], 
+                                       start_node_with_cs, rule[0][1])
+                    new_edge1 = MAEdge(start_node_with_cs, rule[1], end_node)
+                    str_new_edge = str(new_edge1)
+                    if str_new_edge not in new_edges:
+                        print("Adding edge {}".format(str(new_edge0)))
+                        print("Adding edge {}".format(str(new_edge1)))
+                        mautomaton.edges.add(new_edge0)
+                        new_edges.add(str(new_edge0))
+                        mautomaton.edges.add(new_edge1)
+                        new_edges.add(str(new_edge1))
+             
+
+            end_nodes = get_children_depth(start_node, mautomaton.edges, 4)
+                           
         if edges_size == len(new_edges):
             break
         else:
