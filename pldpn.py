@@ -1,14 +1,12 @@
 #!/usr/bin/python3
 
-from pycparser import c_parser, c_ast, c_generator, parse_file
-from itertools import chain, combinations
 import pygraphviz as pgv
 import copy
 import math
 import pickle
-import collections
-
-# Own modules
+from collections import namedtuple
+from pycparser import c_parser, c_ast, c_generator, parse_file
+from itertools import chain, combinations
 from mautomata import *
 
 def powerset(iterable):
@@ -18,19 +16,20 @@ def powerset(iterable):
 def subsets(s):
     return map(set, powerset(s))
 
-ControlState = collections.namedtuple("ControlState", ["priority", "locks",
-                                                       "pl_structure"])
-StackLetter = collections.namedtuple("StackLetter", ["procedure_name",
-                                                     "control_point"])
-MANode = collections.namedtuple("MANode", ["name", "initial", "end",
-                                           "control_state"])
-MAEdge = collections.namedtuple("MAEdge", ["start", "label", "end"])
-PLStructure = collections.namedtuple("PLStructure",
-                                     ["ltp", "hfp", "gr", "ga", "la"])
-MAutomaton = collections.namedtuple("MAutomaton", ["init", "end", "nodes", "edges",
-                                                   "source_nodes"])
-PLDPN = collections.namedtuple("PLDPN", ["control_states", "gamma", "rules"])
-LockInfo = collections.namedtuple("LockInfo", ["action", "name", "p1", "p2"])
+ControlState = namedtuple("ControlState", ["priority", "locks", "pl_structure"])
+StackLetter = namedtuple("StackLetter", ["procedure_name", "control_point"])
+MANode = namedtuple("MANode", ["name", "initial", "end", "control_state"])
+MAEdge = namedtuple("MAEdge", ["start", "label", "end"])
+PLStructure = namedtuple("PLStructure", ["ltp", "hfp", "gr", "ga", "la"])
+MAutomaton = namedtuple("MAutomaton", ["init", "end", "nodes", "edges",
+                                       "source_nodes"])
+PLDPN = namedtuple("PLDPN", ["control_states", "gamma", "rules"])
+LockInfo = namedtuple("LockInfo", ["action", "lock", "p1", "p2"])
+PLRule = namedtuple("PLRule", ["prev_top_stack", "label", "next_top_stack"])
+LockAction = namedtuple("LockAction", ["action", "lock"])
+SpawnAction = namedtuple("SpawnAction", ["procedure", "priority"])
+GlobalAction = namedtuple("GlobalAction", ["action", "variable"])
+ReturnAction = namedtuple("Return", [])
 
 class DPN:
     def __init__(self, pldpn, all_pl_structures):
@@ -223,92 +222,87 @@ def compose(pl_structure_1, pl_structure_2):
                 
     return (ltp, hfp, gr, ga, la)
                 
-def get_pl_dpn(fname, fbody):
-    cp = 0
-    rules = set()
-    gamma =set()
+def make_pldpn(procedure_name, procedure_body):
     control_states = set()
+    gamma =set()
+    rules = set()
+
+    control_point = 0
     ignore = ["printf", "display", "wait"]
     
     for e in fbody:
+        prev_top_stack = StackLetter(procedure_name=procedure_name,
+                                     control_point=control_point)
+        next_top_stack = StackLetter(procedure_name=procedure_name,
+                                     control_point=control_point + 1)
         if isinstance(e, c_ast.FuncCall):
             call_name = e.name.name
+            
             if call_name in ignore:
                 pass
             elif call_name == "pthread_spin_lock":
-                start = fname+"_"+str(cp)
-                end = fname+"_"+str(cp+1)
-                rules.add((start, ("acq", "l"), end))
-                gamma.add(start)
-                gamma.add(end)                
-                cp += 1
+                rules.add(PLRule(prev_top_stack=prev_top_stack,
+                                 label=LockAction(action="acq", lock="l"),
+                                 next_top_stack=next_top_stack))
+                control_point += 1
+                
             elif call_name == "pthread_spin_unlock":
-                start = fname+"_"+str(cp)
-                end = fname+"_"+str(cp+1)
-                rules.add((start, ("rel", "l"), end))
-                gamma.add(start)
-                gamma.add(end)                                
-                cp += 1
+                rules.add(PLRule(prev_top_stack=prev_top_stack,
+                                 label=LockAction(action="rel", lock="l"),
+                                 next_top_stack=next_top_stack))
+                control_point += 1
+                
             elif call_name == "create_thread":
-                new_thread_func = e.args.exprs[0].name
+                new_thread_procedure = e.args.exprs[0].name
                 priority = int(e.args.exprs[1].value)
-                start = fname+"_"+str(cp)
-                end = fname+"_"+str(cp+1)
-                gamma.add(start)
-                gamma.add(end)
                 pl_structure = PLStructure(ltp=math.inf, hfp=priority,
                                            gr=tuple(), ga=tuple(), la=tuple())
                 control_states.add(ControlState(priority=priority, locks=tuple(),
                                                 pl_structure=pl_structure))
-                rules.add((start, ("spawn", new_thread_func, priority), end))
-                cp += 1
+                rules.add(PLRule(prev_top_stack=prev_top_stack,
+                                 label=SpawnAction(procedure=new_thread_procedure,
+                                                   priority=priority),
+                                 next_top_stack=next_top_stack))
+                control_point += 1
+                
             elif call_name == "assert":
-                lab = None
+                label = None
                 if isinstance(e.args.exprs[0].left, c_ast.ID):
-                    gv = e.args.exprs[0].left.name
-                    if gv in global_vars:
-                        lab = ("read", gv)
+                    var = e.args.exprs[0].left.name
+                    if var in global_vars:
+                        label = GlobalAction(action="read", variable=var)
                 if isinstance(e.args.exprs[0].right, c_ast.ID):
-                    gv = e.args.exprs[0].right.name
-                    if gv in global_vars:
-                        lab = ("read", gv)
-                if lab:
-                    start = fname+"_"+str(cp)
-                    end = fname+"_"+str(cp+1)
-                    gamma.add(start)
-                    gamma.add(end)                                
-                    rules.add((start, lab, end))
-                    cp += 1
+                    var = e.args.exprs[0].right.name
+                    if var in global_vars:
+                        label = GlobalAction(action="read", variable=var)
+                if label is not None:
+                    rules.add(PLRule(prev_top_stack=prev_top_stack, label=label,
+                                     next_top_stack=next_top_stack))
+                    control_point += 1
                 
         if isinstance(e, c_ast.Decl):
             if isinstance(e.init, c_ast.ID):
                 if e.init.name in global_vars:
-                    gv = e.init.name
-                    start = fname+"_"+str(cp)
-                    end = fname+"_"+str(cp+1)
-                    gamma.add(start)
-                    gamma.add(end)                                
-                    rules.add((start, ("read", gv), end))
-                    cp += 1
+                    var = e.init.name
+                    label = GlobalAction(action="read", variable=var)
+                    rules.add(PLRule(prev_top_stack=prev_top_stack, label=label,
+                                     next_top_stack=next_top_stack))
+                    control_point += 1
                     
         if isinstance(e, c_ast.UnaryOp):
             if e.expr.name in global_vars:
-                gv = e.expr.name
-                start = fname+"_"+str(cp)
-                end = fname+"_"+str(cp+1)
-                gamma.add(start)
-                gamma.add(end)                                
-                rules.add((start, ("write", gv), end))
-                cp += 1                
+                var = e.expr.name
+                label = GlobalAction(action="write", variable=var)
+                rules.add(PLRule(prev_top_stack=prev_top_stack, label=label,
+                                 next_top_stack=next_top_stack))
+                control_point += 1
 
-                
-    start = fname+"_"+str(cp)
-    end = fname+"_"+str(cp+1)
-    gamma.add(start)
-    gamma.add(end)                                
-    
-    gamma.union(set([start, end]))
-    rules.add((start, ("return",), end))
+    prev_top_stack = StackLetter(procedure_name=procedure_name,
+                                 control_point=control_point)
+    next_top_stack = StackLetter(procedure_name=procedure_name,
+                                 control_point=control_point + 1)
+    rules.add(PLRule(prev_top_stack=prev_top_stack, label=ReturnAction(),
+                     next_top_stack=next_top_stack))
     
     return control_states, gamma, rules
 
@@ -426,11 +420,14 @@ def pre_star(pldpn, mautomaton):
     new_edges = set()
     while True:
         edges_size = len(new_edges)
-        for rule in dpn.rules:
-            if rule[2][0] == 'spawn' and len(rule[3][1].la) != 0:
-                continue
-            for start_node in mautomaton.sc:
-                if rule[2][0] != 'spawn':
+        
+        for rule in pldpn.rules:
+            prev_top_stack = rule.prev_top_stack
+            label = rule.label
+            next_top_stack = rule.next_top_stack
+            
+            for start_node in mautomaton.source_nodes:
+                if isinstance(label, SpawnAction):
                     end_nodes = get_children_depth(start_node, mautomaton.edges, 2)
                 else:
                     end_nodes = get_children_depth(start_node, mautomaton.edges, 4)
