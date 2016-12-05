@@ -435,9 +435,6 @@ def pre_star(pldpn, mautomaton):
                     if start_node == end_node:
                         continue
                     target_rule = target(rule)
-                    i += 1
-                    if i % 1000000 == 0:
-                        print("Iteration {}".format(i))
                     node_path, found = exist_path(mautomaton, start_node,
                                                   target(rule), end_node)
                     if found:
