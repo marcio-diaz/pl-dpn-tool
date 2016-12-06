@@ -40,54 +40,50 @@ def update(priority, label, pls):
     
     action = label[0]
 
-    if action == 'read' or action == 'write':
+    if isinstance(label, GlobalAction):
         return pls
     
-    elif action == 'return':
+    elif isinstance(label, ReturnAction):
         upd_pls  = PLStructure(ltp=priority, hfp=pls.hfp,
                           gr=pls.gr, ga=pls.ga, la=pls.la)
         return upd_pls
     
-    elif action == 'spawn':
+    elif isinstance(label, SpawnAction):
         upd_pls = PLStructure(ltp=min(priority, pls.ltp), hfp=pls.hfp,
                               gr=pls.gr, ga=pls.ga, la=pls.la)
         return upd_pls
     
-    elif action == 'rel':
-        lock = label[1]
-        lock_info = LockInfo(action=action, lock=lock,
+    elif isinstance(label, LockAction) and label.action == 'rel':
+        lock_info = LockInfo(action=action, lock=label.lock,
                              p1=priority, p2=min(pls.ltp, pls.hfp))
         upd_pls = PLStructure(ltp=pls.ltp, hfp=pls.hfp,
                               gr=pls.gr, ga=pls.ga, la=pls.la + (lock_info,))
         return upd_pls
 
-    elif action == 'acq' and \
-         len([t for t in pls.la if t[0] == 'rel' and t[1] == label[1]]) == 0:
-        lock = label[1]
-        lock_info = LockInfo(action=action, lock=lock,
+    elif isinstance(label, LockAction) and label.action == 'acq' and \
+         len([t for t in pls.la if t.action == 'rel' and t.lock == label.lock]) == 0:
+        lock_info = LockInfo(action=action, lock=label.lock,
                              p1=priority, p2=min(pls.ltp, pls.hfp))
         ga = set(pls.ga)
-        ga |= set([(lock, t[1]) for t in pls.la if t[0] == 'usg'])
+        ga |= set([(label.lock, t.lock) for t in pls.la if t.action == 'usg'])
         ga = tuple(pls.ga)
         upd_pls = PLStructure(ltp=pls.ltp, hfp=pls.hfp, gr=pls.gr, ga=ga,
                               la=pls.la + (lock_info,))
         return upd_pls
     
-    elif action == 'acq': # usage
-        lock = label[1]        
-        la = set([t for t in pls.la if t[0] != 'rel' or t[1] == label[1]])
-        lock_info = LockInfo(action='usg', lock=lock, p1=priority,
+    elif isinstance(label, LockAction) and label.action == 'acq': # usage
+        la = set([t for t in pls.la if t.action != 'rel' or t.lock != label.lock])
+        lock_info = LockInfo(action='usg', lock=label.lock, p1=priority,
                              p2=min(pls.ltp, pls.hfp))
         la |= set([lock_info])
         la = tuple(la)
-        gr = set([(l1, l2) for (l1, l2) in pls.gr if l2 != lock])
-        gr |= set([(lock, t[1]) for t in pls.la if t[0] == 'rel'])
+        gr = set([(l1, l2) for (l1, l2) in pls.gr if l2 != label.lock])
+        gr |= set([(label.lock, t.lock) for t in pls.la if t.action == 'rel'])
         gr = tuple(pls.gr)
 
         upd_pls = PLStructure(ltp=pls.ltp, hfp=pls.hfp, gr=pls.gr, ga=pls.ga,
                               la=la)
         return upd_pls
-    
     assert(False)
 
 def compose(pl_structure_1, pl_structure_2):
@@ -107,14 +103,14 @@ def compose(pl_structure_1, pl_structure_2):
     la = set()
     
     for a, l, x, y in la1:
-        upd_info = (a, l, x, min(lpb2, y))
+        upd_info = LockInfo(a, l, x, min(lpb2, y))
         la.add(upd_info)
         
     for a, l, x, y in la2:
-        upd_info = (a, l, x, min(lpb1, y))
+        upd_info = LockInfo(a, l, x, min(lpb1, y))
         la.add(upd_info)
 
-    gr = gr1 | gr2
+    gr = set(gr1) | set(gr2)
     for a1, l1, x1, y1 in la1:
         for a2, l2, x2, y2 in la2:
             if a1 == 'rel' and a2 == 'usg' and x1 < x2:
@@ -122,7 +118,7 @@ def compose(pl_structure_1, pl_structure_2):
             if a1 == 'usg' and a2 == 'rel' and x2 < x1:
                 gr.add((l1, l2))                
 
-    ga = set()
+    ga = set(ga1) | set(ga2)
     for a1, l1, x1, y1 in la1:
         for a2, l2, x2, y2 in la2:
             if a1 == 'acq' and a2 == 'usg' and ltp1 < y2:
@@ -130,7 +126,7 @@ def compose(pl_structure_1, pl_structure_2):
             if a1 == 'usg' and a2 == 'acq' and ltp2 < y1:
                 ga.add((l2, l1))
                 
-    return (ltp, hfp, gr, ga, la)
+    return PLStructure(ltp, hfp, tuple(gr), tuple(ga), tuple(la))
                 
 def make_pldpn(procedure_name, procedure_body):
     control_states = set()
@@ -138,7 +134,7 @@ def make_pldpn(procedure_name, procedure_body):
     rules = set()
 
     control_point = 0
-    ignore = ["printf", "display", "wait"]
+    ignore = ["printf", "display", "wait", "init_main_thread", "end_main_thread"]
     
     for e in procedure_body:
         prev_top_stack = StackLetter(procedure_name=procedure_name,
@@ -170,9 +166,10 @@ def make_pldpn(procedure_name, procedure_body):
                 FUNCTION_PRIORITY[new_thread_procedure] = priority
                 control_states.add(ControlState(priority=priority, locks=tuple(),
                                                 pl_structure=pl_structure))
+                label = SpawnAction(procedure=new_thread_procedure,
+                                    priority=priority)
                 rules.add(PLRule(prev_top_stack=prev_top_stack,
-                                 label=SpawnAction(procedure=new_thread_procedure,
-                                                   priority=priority),
+                                 label=label,
                                  next_top_stack=next_top_stack))
                 control_point += 1
                 
@@ -227,11 +224,12 @@ def get_children_depth(father, edges, max_depth):
         child_path = stack.pop()
         for edge in edges:
             if child_path.child == edge.start:
-                if len(child_path.path) < max_depth:
-                    stack.append(ChildPath(child=edge.end,
-                                           path=child_path.path + (edge.label,)))
+                new_child = ChildPath(child=edge.end,
+                                           path=child_path.path + (edge.label,))
+                if len(child_path.path) + 1 < max_depth:
+                    stack.append(new_child)
                 else:
-                    children.add(child_path)
+                    children.add(new_child)
     return tuple(children)
 
 
@@ -305,7 +303,7 @@ def pre_star(pldpn, mautomaton):
 
         for start_node in mautomaton.source_nodes:
             # First we try to match with a non-spawning rule.
-            end_nodes_and_paths = get_children_depth(start_node, mautomaton.edges, 2)
+            end_nodes_and_paths = get_children_depth(start_node, new_edges, 2)
             for end_node_path in end_nodes_and_paths:
                 child = end_node_path.child
                 path = end_node_path.path
@@ -332,14 +330,16 @@ def pre_star(pldpn, mautomaton):
                         new_pl_structure = update(rule_prev_priority, label,
                                                   path_control_state.pl_structure)
                         if isinstance(label, LockAction) and label.action == 'acq':
+                            new_locks = set(path_control_state.locks) \
+                                        - set([label.lock])
                             new_control_state = \
                                     ControlState(priority=rule_prev_priority,
-                                                 locks=tuple(['l']),
+                                                 locks=tuple(new_locks),
                                                  pl_structure=new_pl_structure)
                         else:
                             new_control_state = \
                                     ControlState(priority=rule_prev_priority,
-                                                 locks=tuple(),
+                                                 locks=path_control_state.locks,
                                                  pl_structure=new_pl_structure)
                         
                         start_node_cpy = MANode(name=start_node.name,
@@ -349,7 +349,7 @@ def pre_star(pldpn, mautomaton):
                                            label=new_control_state,
                                            end=start_node_cpy)
                         new_edge_1 = MAEdge(start=start_node_cpy,
-                                            label=next_top_stack, end=child)
+                                            label=prev_top_stack, end=child)
 
                         if new_edge_0 not in new_edges:
                             print("Adding edge {}".format(new_edge_0))
@@ -358,15 +358,76 @@ def pre_star(pldpn, mautomaton):
                         if new_edge_1 not in new_edges:
                             print("Adding edge {}".format(new_edge_1))
                             new_edges.add(new_edge_1)
+            
+            # Saturation for spawning rules.
+            end_nodes_and_paths = get_children_depth(start_node, new_edges, 5)
+            for end_node_path in end_nodes_and_paths:
+                child = end_node_path.child
+                path = end_node_path.path
+                path_control_state_1, path_stack_1, epsilon, \
+                    path_control_state_0, path_stack_0 = path
 
-#            end_nodes = get_children_depth(start_node, mautomaton.edges, 4)
-                           
+                for rule in pldpn.rules:
+                    prev_top_stack = rule.prev_top_stack
+                    label = rule.label
+                    next_top_stack = rule.next_top_stack
+
+                    if not isinstance(label, SpawnAction):
+                        continue # Only spawning can match.
+                    
+                    rule_priority = FUNCTION_PRIORITY[next_top_stack.procedure_name]
+                    spawned_stack = StackLetter(procedure_name=label.procedure,
+                                                control_point=0)
+
+                    if rule_priority == path_control_state_0.priority and \
+                       next_top_stack == path_stack_0 and \
+                       label.priority == path_control_state_1.priority and \
+                       spawned_stack == path_stack_1:
+                        # This means we can apply the rule over the path.
+
+                        new_pl_structure = compose(path_control_state_1.pl_structure,
+                                                   path_control_state_0.pl_structure)
+                        new_pl_structure = update(rule_priority, label,
+                                                  new_pl_structure)
+                        new_control_state = \
+                                    ControlState(priority=rule_priority,
+                                                 locks=path_control_state_0.locks,
+                                                 pl_structure=new_pl_structure)
+                        
+                        start_node_cpy = MANode(name=start_node.name,
+                                                initial=False, end=False,
+                                                control_state=new_control_state)
+                        new_edge_0 = MAEdge(start=start_node,
+                                           label=new_control_state,
+                                           end=start_node_cpy)
+                        new_edge_1 = MAEdge(start=start_node_cpy,
+                                            label=prev_top_stack, end=child)
+
+                        if new_edge_0 not in new_edges:
+                            print("Adding edge (spawn) {}".format(new_edge_0))
+                            new_edges.add(new_edge_0)
+                        
+                        if new_edge_1 not in new_edges:
+                            print("Adding edge (spawn) {}".format(new_edge_1))
+                            new_edges.add(new_edge_1)
+
+
         if new_edges_size == len(new_edges):
             break
         else:
             print("Incrementing num of rules from {} to {}.".format(new_edges_size,
                                                                     len(new_edges)))
+    return new_edges
 
+def mautomaton_draw(mautomaton):
+    g = pgv.AGraph(strict=False, directed=True)
+    for edge in mautomaton.edges:
+        g.add_edge(str(edge.start), str(edge.end), label=str(edge.label))
+    g.layout(prog='dot')
+    g.write('file.dot')
+    g.draw('file.ps')
+
+            
 if __name__ == "__main__":
     ast = parse_file('test_clean.c')
     global_vars = []
@@ -378,8 +439,6 @@ if __name__ == "__main__":
         if isinstance(e, c_ast.FuncDef):
             procedures[e.decl.name] = e.body.block_items
         
-    print("Global variables:", global_vars)
-
     control_states = set()
     gamma = set()
     rules = set()
@@ -392,5 +451,9 @@ if __name__ == "__main__":
         
     pldpn = PLDPN(control_states=control_states, gamma=gamma, rules=rules)
     mautomaton = get_simple_mautomaton()
-    pre_star(pldpn, mautomaton)
-
+    new_edges = pre_star(pldpn, mautomaton)
+    new_mautomaton = MAutomaton(init=mautomaton.init, end=mautomaton.end,
+                                nodes=mautomaton.nodes, edges=tuple(new_edges),
+                                source_nodes=mautomaton.source_nodes)
+    mautomaton_draw(new_mautomaton)
+    

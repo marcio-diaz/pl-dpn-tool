@@ -1,31 +1,252 @@
 digraph {
-	graph [bb="0,0,438.84,123"];
+	graph [bb="0,0,6602.5,1380"];
 	node [label="\N"];
-	0	 [height=0.5,
-		pos="31.836,105",
-		width=0.75];
-	0 -> 0	 [label="P_(1,set())",
-		lp="105.84,105",
-		pos="e,59.077,103.43 59.077,106.57 68.86,106.61 76.836,106.08 76.836,105 76.836,104.34 73.875,103.89 69.347,103.64"];
-	0 -> 0	 [label="P_(2,set())",
-		lp="163.84,105",
-		pos="e,58.803,102.54 58.803,107.46 90.613,108.9 134.84,108.08 134.84,105 134.84,102.23 99.14,101.29 68.82,102.17"];
-	0 -> 0	 [label="P_(0,set())",
-		lp="221.84,105",
-		pos="e,58.808,101.98 58.808,108.02 106.91,111.05 192.84,110.04 192.84,105 192.84,100.29 117.94,99.101 68.854,101.43"];
-	0 -> 0	 [label="P_(1,set())",
-		lp="279.84,105",
-		pos="e,58.503,101.58 58.503,108.42 120.25,113.18 250.84,112.04 250.84,105 250.84,98.333 133.66,96.957 68.817,100.87"];
-	0 -> 0	 [label="P_(2,set())",
-		lp="337.84,105",
-		pos="e,58.376,101.24 58.376,108.76 132.27,115.3 308.84,114.04 308.84,105 308.84,96.345 147.12,94.824 68.448,100.44"];
-	1	 [height=0.5,
-		pos="31.836,18",
-		width=0.75];
-	0 -> 1	 [label=epsilon,
-		lp="21.836,61.5",
-		pos="e,15.501,32.725 16.039,90.227 10.429,84.324 4.7797,76.956 1.8365,69 -1.8365,59.071 2.4978,48.91 8.9102,40.364"];
-	1 -> 0	 [label=epsilon,
-		lp="61.836,61.5",
-		pos="e,38.015,87.416 37.686,35.885 39.378,41.568 40.995,47.992 41.836,54 42.917,61.715 42.073,70.034 40.5,77.63"];
+	"MANode(name=4, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=False))"	 [height=0.5,
+		pos="6185.3,636",
+		width=11.591];
+	"MANode(name=9, initial=False, end=True, control_state=None)"	 [height=0.5,
+		pos="3224.3,18",
+		width=6.7522];
+	"MANode(name=4, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=False))" -> "MANode(name=9, initial=False, end=True, control_state=None)"	 [label="StackLetter(procedure_name='main', control_point=1)",
+		lp="6189.3,322.5",
+		pos="e,3465.9,20.037 6127.5,618.16 6087.1,602.41 6040.3,574.37 6040.3,529 6040.3,529 6040.3,529 6040.3,104 6040.3,40.165 4166.6,23.914 \
+3476,20.093"];
+	"MANode(name=4, initial=False, end=False, control_state=ControlState(priority=2, locks=('l',), pl_structure=PLStructure(ltp=inf, \
+hfp=2, gr=(), ga=(), la=())))"	 [height=0.5,
+		pos="1021.3,690",
+		width=15.996];
+	"MANode(name=5, initial=False, end=False, control_state=None)"	 [height=0.5,
+		pos="1454.3,582",
+		width=6.8063];
+	"MANode(name=4, initial=False, end=False, control_state=ControlState(priority=2, locks=('l',), pl_structure=PLStructure(ltp=inf, \
+hfp=2, gr=(), ga=(), la=())))" -> "MANode(name=5, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='D', control_point=1)",
+		lp="1442.3,636",
+		pos="e,1387.6,599.33 1090.4,672.09 1168.7,652.92 1296,621.75 1377.4,601.82"];
+	"MANode(name=6, initial=False, end=False, control_state=None)"	 [height=0.5,
+		pos="1454.3,474",
+		width=6.8063];
+	"MANode(name=5, initial=False, end=False, control_state=None)" -> "MANode(name=6, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name=None, control_point=None)",
+		lp="1613.3,528",
+		pos="e,1454.3,492.34 1454.3,563.97 1454.3,547.38 1454.3,521.88 1454.3,502.43"];
+	"MANode(name=6, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+1, gr=(), ga=(), la=())))"	 [height=0.5,
+		pos="1454.3,366",
+		width=15.779];
+	"MANode(name=6, initial=False, end=False, control_state=None)" -> "MANode(name=6, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+1, gr=(), ga=(), la=())))"	 [label="ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=inf, hfp=1, gr=(), ga=(), la=()))",
+		lp="1717.8,420",
+		pos="e,1454.3,384.34 1454.3,455.97 1454.3,439.38 1454.3,413.88 1454.3,394.43"];
+	"MANode(name=7, initial=False, end=False, control_state=None)"	 [height=0.5,
+		pos="3224.3,279",
+		width=6.8063];
+	"MANode(name=6, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+1, gr=(), ga=(), la=())))" -> "MANode(name=7, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='B', control_point=4)",
+		lp="2585.3,322.5",
+		pos="e,3025.6,289.54 1752.5,350.68 2110.8,333.47 2702.7,305.05 3015.5,290.03"];
+	"MANode(name=4, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=1),))))"	 [height=0.5,
+		pos="3894.3,528",
+		width=20.076];
+	"MANode(name=4, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=1),))))" -> "MANode(name=7, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='B', control_point=3)",
+		lp="3966.3,420",
+		pos="e,3412.4,290.58 3877.1,509.93 3861.2,493.14 3838.4,466.01 3826.3,438 3810.1,400.79 3840.6,375.95 3811.3,348 3783.1,321.17 3581.9,\
+302.25 3422.9,291.29"];
+	"MANode(name=8, initial=False, end=False, control_state=None)"	 [height=0.5,
+		pos="3224.3,192",
+		width=6.8063];
+	"MANode(name=7, initial=False, end=False, control_state=None)" -> "MANode(name=8, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name=None, control_point=None)",
+		lp="3383.3,235.5",
+		pos="e,3224.3,210.18 3224.3,260.8 3224.3,249.16 3224.3,233.55 3224.3,220.24"];
+	"MANode(name=8, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+1, gr=(), ga=(), la=())))"	 [height=0.5,
+		pos="3224.3,105",
+		width=15.779];
+	"MANode(name=8, initial=False, end=False, control_state=None)" -> "MANode(name=8, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+1, gr=(), ga=(), la=())))"	 [label="ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=inf, hfp=1, gr=(), ga=(), la=()))",
+		lp="3487.8,148.5",
+		pos="e,3224.3,123.18 3224.3,173.8 3224.3,162.16 3224.3,146.55 3224.3,133.24"];
+	"MANode(name=8, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+1, gr=(), ga=(), la=())))" -> "MANode(name=9, initial=False, end=True, control_state=None)"	 [label="StackLetter(procedure_name='main', control_point=2)",
+		lp="3373.3,61.5",
+		pos="e,3224.3,36.175 3224.3,86.799 3224.3,75.163 3224.3,59.548 3224.3,46.237"];
+	"MANode(name=0, initial=True, end=False, control_state=None)"	 [height=0.5,
+		pos="2705.3,1362",
+		width=6.7522];
+	"MANode(name=0, initial=False, end=False, control_state=ControlState(priority=2, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+2, gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2),))))"	 [height=0.5,
+		pos="2343.3,1275",
+		width=20.238];
+	"MANode(name=0, initial=True, end=False, control_state=None)" -> "MANode(name=0, initial=False, end=False, control_state=ControlState(priority=2, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+2, gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2),))))"	 [label="ControlState(priority=2, locks=(), pl_structure=PLStructure(ltp=inf, hfp=2, gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=\
+2, p2=2),)))",
+		lp="2699.3,1318.5",
+		pos="e,2321.6,1293.3 2488,1353.9 2404.3,1348.9 2325.4,1340.4 2312.3,1326 2305.4,1318.5 2308.6,1309.3 2315,1300.8"];
+	"MANode(name=0, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2),))))"	 [height=0.5,
+		pos="5132.3,1113",
+		width=20.076];
+	"MANode(name=0, initial=True, end=False, control_state=None)" -> "MANode(name=0, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2),))))"	 [label="ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=\
+2, p2=2),)))",
+		lp="5488.3,1275",
+		pos="e,5142,1131.1 2942.5,1358 3542,1349.4 5075.4,1319.5 5149.3,1239 5173.6,1212.4 5159.6,1168.4 5146.5,1140.3"];
+	"MANode(name=0, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=False))"	 [height=0.5,
+		pos="417.26,1221",
+		width=11.591];
+	"MANode(name=0, initial=True, end=False, control_state=None)" -> "MANode(name=0, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=False))"	 [label="ControlState(priority=1, locks=(), pl_structure=False)",
+		lp="1369.8,1318.5",
+		pos="e,416.55,1239.1 2472.1,1356.8 2180,1351.3 1664,1340.5 1222.3,1326 1047.5,1320.3 572.68,1402.3 436.26,1293 423.32,1282.6 418.62,1264.5 \
+417.13,1249.1"];
+	"MANode(name=0, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2), LockInfo(action='rel', lock='l', p1=1, p2=1)))))"	 [height=0.5,
+		pos="3219.3,951",
+		width=24.463];
+	"MANode(name=0, initial=True, end=False, control_state=None)" -> "MANode(name=0, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2), LockInfo(action='rel', lock='l', p1=1, p2=1)))))"	 [label="ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=\
+2, p2=2), LockInfo(action='rel', lock='l', p1=1, p2=1))))",
+		lp="3604.3,1167",
+		pos="e,3177,969.11 2908.9,1352.1 2991.7,1346.7 3071.4,1338.3 3086.3,1326 3104,1311.2 3100.3,1299.1 3100.3,1276 3100.3,1276 3100.3,1276 \
+3100.3,1058 3100.3,1019.3 3135.8,991.25 3168,973.77"];
+	"MANode(name=0, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2), LockInfo(action='usg', lock='l', p1=1, p2=1)))))"	 [height=0.5,
+		pos="4136.3,1005",
+		width=24.535];
+	"MANode(name=0, initial=True, end=False, control_state=None)" -> "MANode(name=0, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2), LockInfo(action='usg', lock='l', p1=1, p2=1)))))"	 [label="ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=\
+2, p2=2), LockInfo(action='usg', lock='l', p1=1, p2=1))))",
+		lp="4642.3,1221",
+		pos="e,4136.3,1023.3 2944.4,1358.7 3351.6,1353.2 4136.3,1335 4136.3,1276 4136.3,1276 4136.3,1276 4136.3,1112 4136.3,1085.2 4136.3,1054.7 \
+4136.3,1033.3"];
+	"MANode(name=0, initial=False, end=False, control_state=ControlState(priority=2, locks=('l',), pl_structure=PLStructure(ltp=inf, \
+hfp=2, gr=(), ga=(), la=())))"	 [height=0.5,
+		pos="1021.3,1275",
+		width=15.996];
+	"MANode(name=0, initial=True, end=False, control_state=None)" -> "MANode(name=0, initial=False, end=False, control_state=ControlState(priority=2, locks=('l',), pl_structure=PLStructure(ltp=inf, \
+hfp=2, gr=(), ga=(), la=())))"	 [label="ControlState(priority=2, locks=('l',), pl_structure=PLStructure(ltp=inf, hfp=2, gr=(), ga=(), la=()))",
+		lp="2035.8,1318.5",
+		pos="e,1231.5,1291.8 2483.2,1354.6 2292.9,1348.6 2011.4,1338.8 1766.3,1326 1589.7,1316.8 1389.9,1303.2 1241.6,1292.5"];
+	"MANode(name=1, initial=False, end=False, control_state=None)"	 [height=0.5,
+		pos="1752.3,1167",
+		width=6.8063];
+	"MANode(name=0, initial=False, end=False, control_state=ControlState(priority=2, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+2, gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2),))))" -> "MANode(name=1, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='C', control_point=0)",
+		lp="2275.3,1221",
+		pos="e,1840.5,1183.8 2249.3,1257.1 2140.3,1237.6 1961.6,1205.5 1850.7,1185.7"];
+	"MANode(name=3, initial=False, end=False, control_state=None)"	 [height=0.5,
+		pos="3447.3,864",
+		width=6.8063];
+	"MANode(name=0, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2),))))" -> "MANode(name=3, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='A', control_point=4)",
+		lp="5213.3,1005",
+		pos="e,3637.4,875.39 5123.9,1095 5109,1066.9 5075,1011.5 5028.3,987 4631.5,779.26 4471,932.44 4024.3,900 3899.2,890.92 3758.7,882.36 \
+3647.7,875.98"];
+	"MANode(name=0, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=False))" -> "MANode(name=9, initial=False, end=True, control_state=None)"	 [label="StackLetter(procedure_name='main', control_point=0)",
+		lp="566.26,636",
+		pos="e,2982.5,20.062 417.26,1202.7 417.26,1181.8 417.26,1145.3 417.26,1114 417.26,1114 417.26,1114 417.26,104 417.26,40.397 2283.3,24.004 \
+2972.5,20.118"];
+	"MANode(name=0, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2), LockInfo(action='rel', lock='l', p1=1, p2=1)))))" -> "MANode(name=3, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='A', control_point=2)",
+		lp="3794.3,907.5",
+		pos="e,3600,878.14 3577.3,934.52 3615.6,929.68 3643.6,923.33 3651.3,915 3655.8,910.1 3655.6,905.1 3651.3,900 3644.2,891.66 3629,885.3 \
+3610,880.46"];
+	"MANode(name=0, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2), LockInfo(action='rel', lock='l', p1=1, p2=1)))))" -> "MANode(name=3, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='A', control_point=1)",
+		lp="3208.3,907.5",
+		pos="e,3233.5,872.84 3078.3,933.16 3061.4,925.79 3054.4,915.2 3068.3,900 3080.2,886.96 3148.1,878.71 3223.3,873.52"];
+	"MANode(name=0, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2), LockInfo(action='rel', lock='l', p1=1, p2=1)))))" -> "MANode(name=3, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='A', control_point=3)",
+		lp="3507.3,907.5",
+		pos="e,3403.5,881.75 3301.6,932.99 3317.5,928.24 3333.8,922.31 3348.3,915 3357.9,910.16 3358,905.53 3367.3,900 3375.7,894.91 3385.1,890.14 \
+3394.3,885.86"];
+	"MANode(name=0, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2), LockInfo(action='usg', lock='l', p1=1, p2=1)))))" -> "MANode(name=3, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='A', control_point=0)",
+		lp="4270.3,951",
+		pos="e,3650.9,874.05 4134.5,986.96 4131.8,970.61 4125.3,946.49 4109.3,933 4050,883.19 4015,910.1 3938.3,900 3847.8,888.09 3747.4,880.03 \
+3661.1,874.67"];
+	"MANode(name=0, initial=False, end=False, control_state=ControlState(priority=2, locks=('l',), pl_structure=PLStructure(ltp=inf, \
+hfp=2, gr=(), ga=(), la=())))" -> "MANode(name=1, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='C', control_point=1)",
+		lp="1635.3,1221",
+		pos="e,1646.8,1183.3 1136.3,1257.3 1273,1237.5 1499.8,1204.6 1636.7,1184.8"];
+	"MANode(name=2, initial=False, end=False, control_state=None)"	 [height=0.5,
+		pos="1752.3,1059",
+		width=6.8063];
+	"MANode(name=1, initial=False, end=False, control_state=None)" -> "MANode(name=2, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name=None, control_point=None)",
+		lp="1911.3,1113",
+		pos="e,1752.3,1077.3 1752.3,1149 1752.3,1132.4 1752.3,1106.9 1752.3,1087.4"];
+	"MANode(name=4, initial=False, end=False, control_state=None)"	 [height=0.5,
+		pos="3447.3,777",
+		width=6.8063];
+	"MANode(name=3, initial=False, end=False, control_state=None)" -> "MANode(name=4, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name=None, control_point=None)",
+		lp="3606.3,820.5",
+		pos="e,3447.3,795.18 3447.3,845.8 3447.3,834.16 3447.3,818.55 3447.3,805.24"];
+	"MANode(name=2, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+2, gr=(), ga=(), la=())))"	 [height=0.5,
+		pos="1752.3,951",
+		width=15.779];
+	"MANode(name=2, initial=False, end=False, control_state=None)" -> "MANode(name=2, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+2, gr=(), ga=(), la=())))"	 [label="ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=inf, hfp=2, gr=(), ga=(), la=()))",
+		lp="2015.8,1005",
+		pos="e,1752.3,969.34 1752.3,1041 1752.3,1024.4 1752.3,998.88 1752.3,979.43"];
+	"MANode(name=4, initial=False, end=False, control_state=None)" -> "MANode(name=4, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=False))"	 [label="ControlState(priority=1, locks=(), pl_structure=False)",
+		lp="5161.8,733.5",
+		pos="e,6011.1,652.38 3686.4,772.99 3950.6,768.89 4388.5,759.79 4765.3,741 5209.2,718.86 5730.1,676.51 6000.8,653.27"];
+	"MANode(name=4, initial=False, end=False, control_state=None)" -> "MANode(name=4, initial=False, end=False, control_state=ControlState(priority=2, locks=('l',), pl_structure=PLStructure(ltp=inf, \
+hfp=2, gr=(), ga=(), la=())))"	 [label="ControlState(priority=2, locks=('l',), pl_structure=PLStructure(ltp=inf, hfp=2, gr=(), ga=(), la=()))",
+		lp="2034.8,733.5",
+		pos="e,1220.5,706.9 3204.5,774.47 2877.4,771.61 2277.2,763.52 1765.3,741 1584.6,733.06 1379.6,718.9 1230.6,707.67"];
+	"MANode(name=4, initial=False, end=False, control_state=None)" -> "MANode(name=4, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=1),))))"	 [label="ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=\
+2, p2=1),)))",
+		lp="4241.3,690",
+		pos="e,3919.6,546.09 3612.1,763.65 3722.8,745.77 3861.2,702.76 3933.3,600 3942.5,586.9 3939.8,578.61 3933.3,564 3931.6,560.27 3929.3,\
+556.78 3926.7,553.55"];
+	"MANode(name=4, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=1), LockInfo(action='usg', lock='l', p1=1, p2=1)))))"	 [height=0.5,
+		pos="4998.3,420",
+		width=24.535];
+	"MANode(name=4, initial=False, end=False, control_state=None)" -> "MANode(name=4, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=1), LockInfo(action='usg', lock='l', p1=1, p2=1)))))"	 [label="ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=\
+2, p2=1), LockInfo(action='usg', lock='l', p1=1, p2=1))))",
+		lp="5257.3,636",
+		pos="e,4839.4,437.72 3683.8,772.29 4059.6,764.82 4751.3,743.87 4751.3,691 4751.3,691 4751.3,691 4751.3,527 4751.3,482.11 4786.1,455.99 \
+4829.7,440.87"];
+	"MANode(name=4, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=1), LockInfo(action='rel', lock='l', p1=1, p2=1)))))"	 [height=0.5,
+		pos="2921.3,366",
+		width=24.463];
+	"MANode(name=4, initial=False, end=False, control_state=None)" -> "MANode(name=4, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=1), LockInfo(action='rel', lock='l', p1=1, p2=1)))))"	 [label="ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=\
+2, p2=1), LockInfo(action='rel', lock='l', p1=1, p2=1))))",
+		lp="3425.3,582",
+		pos="e,2915.1,384.26 3384.8,759.49 3251.6,723.66 2949.3,638.88 2921.3,600 2876.7,538.04 2897.8,440.81 2912,393.98"];
+	"MANode(name=4, initial=False, end=False, control_state=ControlState(priority=2, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+2, gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2),))))"	 [height=0.5,
+		pos="2343.3,690",
+		width=20.238];
+	"MANode(name=4, initial=False, end=False, control_state=None)" -> "MANode(name=4, initial=False, end=False, control_state=ControlState(priority=2, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+2, gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2),))))"	 [label="ControlState(priority=2, locks=(), pl_structure=PLStructure(ltp=inf, hfp=2, gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=\
+2, p2=2),)))",
+		lp="2699.3,733.5",
+		pos="e,2321.9,708.02 3208.9,772.76 2880.6,767.72 2327.7,756.89 2312.3,741 2305.1,733.59 2308.4,724.24 2315,715.63"];
+	"MANode(name=4, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=1), LockInfo(action='usg', lock='l', p1=1, p2=1)))))" -> "MANode(name=7, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='B', control_point=0)",
+		lp="4772.3,366",
+		pos="e,3423.3,289.54 4832.6,402.32 4608.6,380.16 4196.6,340.81 3844.3,315 3707.5,304.98 3553.6,296.28 3433.4,290.06"];
+	"MANode(name=4, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=1), LockInfo(action='rel', lock='l', p1=1, p2=1)))))" -> "MANode(name=7, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='B', control_point=2)",
+		lp="3062.3,322.5",
+		pos="e,3044.8,291.27 2916.4,347.62 2914.5,336.91 2914.4,323.61 2922.3,315 2931.2,305.21 2979.4,297.72 3034.8,292.23"];
+	"MANode(name=4, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=1, hfp=2, \
+gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=1), LockInfo(action='rel', lock='l', p1=1, p2=1)))))" -> "MANode(name=7, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='B', control_point=1)",
+		lp="3355.3,322.5",
+		pos="e,3221.2,297.09 3151.4,348.56 3173.6,343.84 3191.8,337.78 3202.3,330 3209.9,324.32 3214.9,315.42 3218.2,306.69"];
+	"MANode(name=4, initial=False, end=False, control_state=ControlState(priority=2, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+2, gr=(), ga=(), la=(LockInfo(action='acq', lock='l', p1=2, p2=2),))))" -> "MANode(name=5, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='D', control_point=0)",
+		lp="2171.3,636",
+		pos="e,1576.9,597.62 2203.4,672.32 2034.6,652.19 1752.8,618.59 1587.1,598.84"];
+	"MANode(name=2, initial=False, end=False, control_state=ControlState(priority=1, locks=(), pl_structure=PLStructure(ltp=inf, hfp=\
+2, gr=(), ga=(), la=())))" -> "MANode(name=3, initial=False, end=False, control_state=None)"	 [label="StackLetter(procedure_name='A', control_point=5)",
+		lp="2841.3,907.5",
+		pos="e,3251.2,874.83 2041.7,935.48 2382.8,918.38 2941.1,890.38 3241.1,875.34"];
 }
