@@ -4,16 +4,16 @@ def get_simple_mautomaton():
 
     # Priority Structures
     pl_structure_1 = pl_structure=PLStructure(ltp=math.inf, hfp=1,
-                                              gr=set(), ga=set(), la=set())
+                                              gr=tuple(), ga=tuple(), la=tuple())
     pl_structure_2 = pl_structure=PLStructure(ltp=math.inf, hfp=2,
-                                              gr=set(), ga=set(), la=set())
+                                              gr=tuple(), ga=tuple(), la=tuple())
 
     # Control States
-    c2 = ControlState(priority=2, locks=set(['l']), pl_structure=pl_structure_2)
-    c3 = ControlState(priority=1, locks=set(), pl_structure=pl_structure_2)
-    c4 = ControlState(priority=2, locks=set(['l']), pl_structure=pl_structure_2)
-    c5 = ControlState(priority=1, locks=set(), pl_structure=pl_structure_1)    
-    c6 = ControlState(priority=1, locks=set(), pl_structure=pl_structure_1)
+    c2 = ControlState(priority=2, locks=tuple(['l']), pl_structure=pl_structure_2)
+    c3 = ControlState(priority=1, locks=tuple(), pl_structure=pl_structure_2)
+    c4 = ControlState(priority=2, locks=tuple(['l']), pl_structure=pl_structure_2)
+    c5 = ControlState(priority=1, locks=tuple(), pl_structure=pl_structure_1)    
+    c6 = ControlState(priority=1, locks=tuple(), pl_structure=pl_structure_1)
 
     # Stack Letters
     a0 = StackLetter(procedure_name='C', control_point=1)

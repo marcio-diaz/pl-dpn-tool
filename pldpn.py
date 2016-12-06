@@ -31,7 +31,7 @@ SpawnAction = namedtuple("SpawnAction", ["procedure", "priority"])
 GlobalAction = namedtuple("GlobalAction", ["action", "variable"])
 ReturnAction = namedtuple("Return", [])
 
-function_priority = {'main': 1}
+FUNCTION_PRIORITY = {'main': 1}
 
 
 def update(priority, label, pls):
@@ -55,7 +55,7 @@ def update(priority, label, pls):
     
     elif action == 'rel':
         lock = label[1]
-        lock_info = LockInfo(action=action, name=lock,
+        lock_info = LockInfo(action=action, lock=lock,
                              p1=priority, p2=min(pls.ltp, pls.hfp))
         upd_pls = PLStructure(ltp=pls.ltp, hfp=pls.hfp,
                               gr=pls.gr, ga=pls.ga, la=pls.la + (lock_info,))
@@ -64,7 +64,7 @@ def update(priority, label, pls):
     elif action == 'acq' and \
          len([t for t in pls.la if t[0] == 'rel' and t[1] == label[1]]) == 0:
         lock = label[1]
-        lock_info = LockInfo(action=action, name=lock,
+        lock_info = LockInfo(action=action, lock=lock,
                              p1=priority, p2=min(pls.ltp, pls.hfp))
         ga = set(pls.ga)
         ga |= set([(lock, t[1]) for t in pls.la if t[0] == 'usg'])
@@ -76,7 +76,7 @@ def update(priority, label, pls):
     elif action == 'acq': # usage
         lock = label[1]        
         la = set([t for t in pls.la if t[0] != 'rel' or t[1] == label[1]])
-        lock_info = LockInfo(action='usg', name=lock, p1=priority,
+        lock_info = LockInfo(action='usg', lock=lock, p1=priority,
                              p2=min(pls.ltp, pls.hfp))
         la |= set([lock_info])
         la = tuple(la)
@@ -140,7 +140,7 @@ def make_pldpn(procedure_name, procedure_body):
     control_point = 0
     ignore = ["printf", "display", "wait"]
     
-    for e in fbody:
+    for e in procedure_body:
         prev_top_stack = StackLetter(procedure_name=procedure_name,
                                      control_point=control_point)
         next_top_stack = StackLetter(procedure_name=procedure_name,
@@ -167,6 +167,7 @@ def make_pldpn(procedure_name, procedure_body):
                 priority = int(e.args.exprs[1].value)
                 pl_structure = PLStructure(ltp=math.inf, hfp=priority,
                                            gr=tuple(), ga=tuple(), la=tuple())
+                FUNCTION_PRIORITY[new_thread_procedure] = priority
                 control_states.add(ControlState(priority=priority, locks=tuple(),
                                                 pl_structure=pl_structure))
                 rules.add(PLRule(prev_top_stack=prev_top_stack,
@@ -226,11 +227,11 @@ def get_children_depth(father, edges, max_depth):
         child_path = stack.pop()
         for edge in edges:
             if child_path.child == edge.start:
-                if len(child_path.path) + 1 < depth:
+                if len(child_path.path) < max_depth:
                     stack.append(ChildPath(child=edge.end,
                                            path=child_path.path + (edge.label,)))
                 else:
-                    children.add(child)
+                    children.add(child_path)
     return tuple(children)
 
 
@@ -298,46 +299,73 @@ def target(rule):
                 target_control_state_1, target_stack_letter_1]
 
 def pre_star(pldpn, mautomaton):
-    new_edges = set()
+    new_edges = set(mautomaton.edges)
     while True:
         new_edges_size = len(new_edges)
 
         for start_node in mautomaton.source_nodes:
             # First we try to match with a non-spawning rule.
-            end_nodes = get_children_depth(start_node, mautomaton.edges, 2)
-            for end_node in end_nodes_and_paths:
-                child = end_node.child
-                path = end_node.path
-                print(end_node)
-                target_rule = target(rule)
-                node_path, found = exist_path(mautomaton, start_node,
-                                              target(rule), end_node)
-                if found:
-                    start_node_with_cs = copy.copy(start_node)
-                    start_node_with_cs.control_state = rule[0][0]
-                    start_node_with_cs.pl_structure = rule[0][1]
-                    priority = start_node_with_cs.control_state.priority
-                    label = rule[2]
-                    new_edge0 = MAEdge(start_node, rule[0][0], 
-                                       start_node_with_cs, rule[0][1])
-                    new_edge1 = MAEdge(start_node_with_cs, rule[1], end_node)
-                    str_new_edge = str(new_edge1)
-                    if str_new_edge not in new_edges:
-                        print("Adding edge {}".format(str(new_edge0)))
-                        print("Adding edge {}".format(str(new_edge1)))
-                        mautomaton.edges.add(new_edge0)
-                        new_edges.add(str(new_edge0))
-                        mautomaton.edges.add(new_edge1)
-                        new_edges.add(str(new_edge1))
-             
+            end_nodes_and_paths = get_children_depth(start_node, mautomaton.edges, 2)
+            for end_node_path in end_nodes_and_paths:
+                child = end_node_path.child
+                path = end_node_path.path
+                path_control_state, path_stack = path
 
-            end_nodes = get_children_depth(start_node, mautomaton.edges, 4)
+                for rule in pldpn.rules:
+                    prev_top_stack = rule.prev_top_stack
+                    label = rule.label
+                    next_top_stack = rule.next_top_stack
+
+                    if isinstance(label, SpawnAction):
+                        continue # Only non-spawning can match.
+                    elif isinstance(label, ReturnAction):
+                        rule_next_priority = 0 # Thread finish with zero priority.
+                    else:
+                        rule_next_priority = \
+                                    FUNCTION_PRIORITY[next_top_stack.procedure_name]
+                    rule_prev_priority = \
+                                    FUNCTION_PRIORITY[next_top_stack.procedure_name]
+                    if rule_next_priority == path_control_state.priority and \
+                       next_top_stack == path_stack:
+                        # This means we can apply the rule over the path.
+
+                        new_pl_structure = update(rule_prev_priority, label,
+                                                  path_control_state.pl_structure)
+                        if isinstance(label, LockAction) and label.action == 'acq':
+                            new_control_state = \
+                                    ControlState(priority=rule_prev_priority,
+                                                 locks=tuple(['l']),
+                                                 pl_structure=new_pl_structure)
+                        else:
+                            new_control_state = \
+                                    ControlState(priority=rule_prev_priority,
+                                                 locks=tuple(),
+                                                 pl_structure=new_pl_structure)
+                        
+                        start_node_cpy = MANode(name=start_node.name,
+                                                initial=False, end=False,
+                                                control_state=new_control_state)
+                        new_edge_0 = MAEdge(start=start_node,
+                                           label=new_control_state,
+                                           end=start_node_cpy)
+                        new_edge_1 = MAEdge(start=start_node_cpy,
+                                            label=next_top_stack, end=child)
+
+                        if new_edge_0 not in new_edges:
+                            print("Adding edge {}".format(new_edge_0))
+                            new_edges.add(new_edge_0)
+                        
+                        if new_edge_1 not in new_edges:
+                            print("Adding edge {}".format(new_edge_1))
+                            new_edges.add(new_edge_1)
+
+#            end_nodes = get_children_depth(start_node, mautomaton.edges, 4)
                            
-        if edges_size == len(new_edges):
+        if new_edges_size == len(new_edges):
             break
         else:
-            print("comparing: {} and {}.".format(edges_size, len(new_edges)))
-    print("Total iterations: {}.".format(i))
+            print("Incrementing num of rules from {} to {}.".format(new_edges_size,
+                                                                    len(new_edges)))
 
 if __name__ == "__main__":
     ast = parse_file('test_clean.c')
@@ -357,7 +385,7 @@ if __name__ == "__main__":
     rules = set()
     
     for k, v in procedures.items():
-        cs, g, r  = get_pl_dpn(k, v)
+        cs, g, r  = make_pldpn(k, v)
         control_states |= cs
         gamma |= g
         rules |= r
