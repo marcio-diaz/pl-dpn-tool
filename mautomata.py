@@ -3,10 +3,10 @@ from pldpn import *
 def get_simple_mautomaton():
 
     # Priority Structures
-    pl_structure_1 = pl_structure=PLStructure(ltp=math.inf, hfp=1,
-                                              gr=tuple(), ga=tuple(), la=tuple())
-    pl_structure_2 = pl_structure=PLStructure(ltp=math.inf, hfp=2,
-                                              gr=tuple(), ga=tuple(), la=tuple())
+    pl_structure_1 = PLStructure(ltp=inf, hfp=1,
+                                 gr=tuple(), ga=tuple(), la=tuple())
+    pl_structure_2 = PLStructure(ltp=inf, hfp=2,
+                                 gr=tuple(), ga=tuple(), la=tuple())
 
     # Control States
     c2 = ControlState(priority=2, locks=tuple(['l']), pl_structure=pl_structure_2)
