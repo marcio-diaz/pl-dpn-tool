@@ -8,6 +8,7 @@ from collections import namedtuple
 from pycparser import c_parser, c_ast, c_generator, parse_file
 from itertools import chain, combinations
 from mautomata import *
+from clean import clean_file
 
 def powerset(iterable):
     s = list(iterable)
@@ -232,20 +233,22 @@ def make_pldpn(procedure_name, procedure_body):
 ChildPath = namedtuple("ChildPath", ["child", "path"])
 
 def get_children_depth(father, edges, max_depth):
-    stack = [ChildPath(child=father, path=tuple())]
+    stack = set([ChildPath(child=father, path=tuple())])
     children = set()
+    print("Entrando de get_children_depth")
+     
     while stack:
         child_path = stack.pop()
         for edge in edges:
             if child_path.child == edge.start:
                 new_child = ChildPath(child=edge.end,
-                                           path=child_path.path + (edge.label,))
+                                      path=child_path.path + (edge.label,))
                 if len(child_path.path) + 1 < max_depth:
-                    stack.append(new_child)
+                    stack.add(new_child)
                 else:
                     children.add(new_child)
+    print("Saliendo de get_children_depth")
     return tuple(children)
-
 
         
 def exist_path(mautomaton, start_node, target_path, end_node):
@@ -311,13 +314,12 @@ def target(rule):
                 target_control_state_1, target_stack_letter_1]
 
 def pre_star(pldpn, mautomaton):
-    new_edges = set(mautomaton.edges)
     while True:
-        new_edges_size = len(new_edges)
+        new_edges_size = len(mautomaton.edges)
 
         for start_node in mautomaton.source_nodes:
             # First we try to match with a non-spawning rule.
-            end_nodes_and_paths = get_children_depth(start_node, new_edges, 2)
+            end_nodes_and_paths = get_children_depth(start_node, mautomaton.edges, 2)
             for end_node_path in end_nodes_and_paths:
                 child = end_node_path.child
                 path = end_node_path.path
@@ -365,16 +367,16 @@ def pre_star(pldpn, mautomaton):
                         new_edge_1 = MAEdge(start=start_node_cpy,
                                             label=prev_top_stack, end=child)
 
-                        if new_edge_0 not in new_edges:
-                            print("Adding edge {}".format(new_edge_0))
-                            new_edges.add(new_edge_0)
+                        if new_edge_0 not in mautomaton.edges:
+#                            print("Adding edge {}".format(new_edge_0))
+                            mautomaton.edges.add(new_edge_0)
                         
-                        if new_edge_1 not in new_edges:
-                            print("Adding edge {}".format(new_edge_1))
-                            new_edges.add(new_edge_1)
+                        if new_edge_1 not in mautomaton.edges:
+#                            print("Adding edge {}".format(new_edge_1))
+                            mautomaton.edges.add(new_edge_1)
             
             # Saturation for spawning rules.
-            end_nodes_and_paths = get_children_depth(start_node, new_edges, 5)
+            end_nodes_and_paths = get_children_depth(start_node, mautomaton.edges, 4)
             for end_node_path in end_nodes_and_paths:
                 child = end_node_path.child
                 path = end_node_path.path
@@ -417,21 +419,21 @@ def pre_star(pldpn, mautomaton):
                         new_edge_1 = MAEdge(start=start_node_cpy,
                                             label=prev_top_stack, end=child)
 
-                        if new_edge_0 not in new_edges:
-                            print("Adding edge (spawn) {}".format(new_edge_0))
-                            new_edges.add(new_edge_0)
+                        if new_edge_0 not in mautomaton.edges:
+ #                           print("Adding edge (spawn) {}".format(new_edge_0))
+                            mautomaton.edges.add(new_edge_0)
                         
-                        if new_edge_1 not in new_edges:
-                            print("Adding edge (spawn) {}".format(new_edge_1))
-                            new_edges.add(new_edge_1)
+                        if new_edge_1 not in mautomaton.edges:
+ #                           print("Adding edge (spawn) {}".format(new_edge_1))
+                            mautomaton.edges.add(new_edge_1)
 
-
-        if new_edges_size == len(new_edges):
+        print("size = ", len(mautomaton.edges))
+        if new_edges_size == len(mautomaton.edges):
             break
-        else:
-            print("Incrementing num of rules from {} to {}.".format(new_edges_size,
-                                                                    len(new_edges)))
-    return new_edges
+#        else:
+#            print("Incrementing num of rules from {} to {}.".format(new_edges_size,
+#                                                            len(mautomaton.edges)))
+    return mautomaton
 
 def mautomaton_draw(mautomaton, filename):
     g = pgv.AGraph(strict=False, directed=True)
@@ -459,12 +461,14 @@ def run_race_detection(pldpn, global_vars):
                 if not (a1 == 'read' and a2 == 'read'):
                     # is it reachable?
                     epsilon = StackLetter(procedure_name=None, control_point=None)
-                    mautomaton_0 = get_full_mautomaton(pldpn, 0)
+                    mautomaton_0 = get_full_mautomaton(pldpn, 0, True, False)
                     mautomaton_1 = get_full_mautomaton(pldpn,
-                                                       len(mautomaton_0.nodes))
+                                                       len(mautomaton_0.nodes),
+                                                       False, False)
                     mautomaton_2 = get_full_mautomaton(pldpn,
                                                        len(mautomaton_0.nodes)
-                                                       + len(mautomaton_1.nodes))
+                                                       + len(mautomaton_1.nodes),
+                                                       False, True)
                     node_1 = MANode(name=mautomaton_2.end.name+1,
                                     initial=True, end=False, control_state=None)
                     edge_0 = MAEdge(start=mautomaton_0.end, label=epsilon,
@@ -524,14 +528,38 @@ def run_race_detection(pldpn, global_vars):
                                             nodes=nodes,
                                             edges=edges,
                                             source_nodes=source_nodes)
-                    mautomaton_draw(mautomaton, str(num_mautomata))
-                    num_mautomata += 1 
+                    # Draw the automaton to a file.
+                    mautomaton_draw(mautomaton, "initial_" + str(num_mautomata))
+                    num_mautomata += 1
 
-def get_full_mautomaton(pldpn, starting_index):
-    start = MANode(name=len(pldpn.gamma)+starting_index, initial=True, end=False,
-                   control_state=None)
-    end = MANode(name=len(pldpn.gamma)+starting_index+1, initial=False, end=True,
-                 control_state=None)
+                    # Saturate the automaton.
+                    mautomaton = pre_star(pldpn, mautomaton)
+                    mautomaton_draw(mautomaton, "saturated_" + str(num_mautomata))
+
+                    # Check if the initial state is in the automata.
+                    print("Computed mautomaton {} corresponding " \
+                          "to {} and {}.".format(num_mautomata, s1, s2))
+
+                    if check_initial(mautomaton):
+                        print("REACHABLE")
+                    else:
+                        print("UNREACHABLE")
+
+def check_initial(mautomaton):
+    children = get_childrens_depth(mautomaton.init, mautomaton.edges, 2)
+    for child in children:
+        end, path = child
+        control_state, top_stack = path
+        if top_stack.procedure_name == "main" and top_stack.control_point == 0 \
+           and end.end:
+            return True
+    return False
+
+def get_full_mautomaton(pldpn, starting_index, initial_value, end_value):
+    start = MANode(name=len(pldpn.gamma)+starting_index, initial=initial_value,
+                   end=False, control_state=None)
+    end = MANode(name=len(pldpn.gamma)+starting_index+1, initial=False,
+                 end=end_value, control_state=None)
     nodes = set([start, end])
     edges = set()
     
@@ -552,6 +580,9 @@ def get_full_mautomaton(pldpn, starting_index):
     epsilon = StackLetter(procedure_name=None, control_point=None)        
     back_edge = MAEdge(start=end, label=epsilon, end=start)
     edges.add(back_edge)
+    forw_edge = MAEdge(start=start, label=epsilon, end=end)
+    edges.add(back_edge)
+    edges.add(forw_edge)
     source_nodes = set([start])
     mautomaton = MAutomaton(init=start, end=end, nodes=nodes, edges=edges,
                             source_nodes=source_nodes)
@@ -559,7 +590,9 @@ def get_full_mautomaton(pldpn, starting_index):
 
             
 if __name__ == "__main__":
-    ast = parse_file('test_clean.c')
+    filename = "small"
+    clean_file(filename)
+    ast = parse_file(filename + '_clean.c')
     global_vars = []
     procedures = {}
 

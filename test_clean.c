@@ -4,11 +4,9 @@ int y = 0;
 
 void *C(void *arg) {
   printf("C wants the lock\n");    
-  pthread_spin_lock(&lock);
   printf("C has the lock\n");  
   int tmp = y;
   assert(tmp == y);
-  pthread_spin_unlock(&lock);
   printf("C released the lock\n");  
   return NULL;
 }
