@@ -93,8 +93,20 @@ def compose(pl_structure_1, pl_structure_2):
     ltp1, hfp1, gr1, ga1, la1 = pl_structure_1
     ltp2, hfp2, gr2, ga2, la2 = pl_structure_2    
 
-    if not (hfp1 <= ltp1 and ltp1 <= ltp2) and not (hfp1 <= ltp2 and ltp2 <= ltp1):
+    if not (hfp2 <= ltp1 and ltp1 <= ltp2) and not (hfp1 <= ltp2 and ltp2 <= ltp1):
         return False
+
+    for e in la1:
+        if e.action == 'acq' or e.action == 'rel':
+            if e in la2:
+                return False
+
+    for e in la2:
+        if e.action == 'acq' or e.action == 'rel':
+            if e in la1:
+                return False
+
+            
     ltp = min(ltp1, ltp2)
     hfp = max(hfp1, hfp2)
 
@@ -235,83 +247,29 @@ ChildPath = namedtuple("ChildPath", ["child", "path"])
 def get_children_depth(father, edges, max_depth):
     stack = set([ChildPath(child=father, path=tuple())])
     children = set()
-    print("Entrando de get_children_depth")
-     
     while stack:
         child_path = stack.pop()
         for edge in edges:
             if child_path.child == edge.start:
-                new_child = ChildPath(child=edge.end,
-                                      path=child_path.path + (edge.label,))
-                if len(child_path.path) + 1 < max_depth:
+                if len(child_path.path) > 0 \
+                   and isinstance(child_path.path[-1], StackLetter)\
+                   and child_path.path[-1].procedure_name == None:
+                    if isinstance(edge.label, StackLetter) \
+                       and edge.label.procedure_name == None:
+                        continue
+                    else:
+                        new_child = ChildPath(child=edge.end,
+                                              path=child_path.path[:-1] \
+                                              + (edge.label,))
+                else:
+                    new_child = ChildPath(child=edge.end,
+                                          path=child_path.path + (edge.label,))
+                if len(new_child.path) < max_depth:
                     stack.add(new_child)
                 else:
                     children.add(new_child)
-    print("Saliendo de get_children_depth")
     return tuple(children)
 
-        
-def exist_path(mautomaton, start_node, target_path, end_node):
-    visited, stack = set(), [([], [start_node])]
-    while stack:
-        label_path, vertex_path = stack.pop()
-        vertex = vertex_path.pop()
-
-        if vertex not in visited:
-            visited.add(vertex)
-            vertex_children = get_children(vertex, mautomaton.edges)
-            
-            for child_label_vertex in vertex_children:
-                child_label, child_vertex = child_label_vertex
-
-                if child_vertex not in visited:
-                    if len(label_path) > 0:
-                        print("label_path: ", label_path)
-                        print("target_path: ", target_path)                    
-                        child_target = target_path[len(label_path)]
-                        print("child_target: ", child_target)
-                        print("child_label: ", child_label)                        
-                    child_target = target_path[len(label_path)]
-                    if isinstance(child_label, ControlState) \
-                       and isinstance(child_target, ControlState):
-                        # we change the control state
-                        print("Child_target: ", child_target)
-                    
-                        print("Child_label before: ", child_label)
-                        child_label[1] = child_target[1]
-                        print("Child_label after: ", child_label)
-                        
-                    tmp_label_path = label_path + [child_label]
-                    tmp_vertex_path = vertex_path + [vertex, child_vertex]
-                    tmp_label_path_s  = ''.join([str(t) for t in
-                                                 list(tmp_label_path)])
-                    target_path_s = ''.join([str(t) for t in list(target_path)])
-
-                    if tmp_label_path_s == target_path and child_vertex == end_node:
-                        return tmp_vertex_path, True
-
-                    elif target_path_s.startswith(tmp_label_path_s):
-                        stack.append((tmp_label_path, tmp_vertex_path))
-            
-    return [], False
-
-
-def target(rule):
-    prev_top_stack = rule.prev_top_stack
-    label = rule.label
-    next_top_stack = rule.next_top_stack
-    
-    if action != 'spawn':
-        target_control_state = rule[3]
-        target_stack_letter = rule[4]
-        return [target_control_state, target_stack_letter]
-    else:
-        target_control_state_1 = rule[3]
-        target_stack_letter_1 = rule[4]
-        target_control_state_2 = rule[5]
-        target_stack_letter_2 = rule[6]
-        return [target_control_state_2, target_stack_letter_2, \
-                target_control_state_1, target_stack_letter_1]
 
 def pre_star(pldpn, mautomaton):
     while True:
@@ -325,6 +283,10 @@ def pre_star(pldpn, mautomaton):
                 path = end_node_path.path
                 path_control_state, path_stack = path
 
+                if not isinstance(path_control_state, ControlState) or \
+                   not isinstance(path_stack, StackLetter):
+                    continue
+                
                 for rule in pldpn.rules:
                     prev_top_stack = rule.prev_top_stack
                     label = rule.label
@@ -380,9 +342,15 @@ def pre_star(pldpn, mautomaton):
             for end_node_path in end_nodes_and_paths:
                 child = end_node_path.child
                 path = end_node_path.path
-                path_control_state_1, path_stack_1, epsilon, \
+                path_control_state_1, path_stack_1, \
                     path_control_state_0, path_stack_0 = path
 
+                if not isinstance(path_control_state_1, ControlState) or \
+                   not isinstance(path_stack_1, StackLetter) or \
+                   not isinstance(path_control_state_0, ControlState) or \
+                   not isinstance(path_stack_0, StackLetter):
+                    continue
+                
                 for rule in pldpn.rules:
                     prev_top_stack = rule.prev_top_stack
                     label = rule.label
@@ -430,9 +398,6 @@ def pre_star(pldpn, mautomaton):
         print("size = ", len(mautomaton.edges))
         if new_edges_size == len(mautomaton.edges):
             break
-#        else:
-#            print("Incrementing num of rules from {} to {}.".format(new_edges_size,
-#                                                            len(mautomaton.edges)))
     return mautomaton
 
 def mautomaton_draw(mautomaton, filename):
@@ -455,73 +420,52 @@ def run_race_detection(pldpn, global_vars):
                 variable_stack_d[rule.label.variable] = [(rule.label.action, \
                                                           rule.prev_top_stack)]
     num_mautomata = 0
+    epsilon = StackLetter(procedure_name=None, control_point=None)
+    mautomaton_0 = get_full_mautomaton(pldpn, 0, True, False)
+    mautomaton_1 = get_full_mautomaton(pldpn, mautomaton_0.end.name+1, False, False)
+    mautomaton_2 = get_full_mautomaton(pldpn, mautomaton_1.end.name+1, False, True)
+
     for var in global_vars:
         for a1, s1 in variable_stack_d[var]:
             for a2, s2 in variable_stack_d[var]:
                 if not (a1 == 'read' and a2 == 'read'):
-                    # is it reachable?
-                    epsilon = StackLetter(procedure_name=None, control_point=None)
-                    mautomaton_0 = get_full_mautomaton(pldpn, 0, True, False)
-                    mautomaton_1 = get_full_mautomaton(pldpn,
-                                                       len(mautomaton_0.nodes),
-                                                       False, False)
-                    mautomaton_2 = get_full_mautomaton(pldpn,
-                                                       len(mautomaton_0.nodes)
-                                                       + len(mautomaton_1.nodes),
-                                                       False, True)
-                    node_1 = MANode(name=mautomaton_2.end.name+1,
-                                    initial=True, end=False, control_state=None)
-                    edge_0 = MAEdge(start=mautomaton_0.end, label=epsilon,
-                                    end=node_1)
+                    # First configuration.
                     priority_1 = FUNCTION_PRIORITY[s1.procedure_name]
                     pl_structure_1 = PLStructure(ltp=inf, hfp=priority_1,
                                                  gr=tuple(), ga=tuple(), la=tuple())
                     control_state_1  = ControlState(priority=priority_1,
                                                     locks=tuple(),
                                                     pl_structure=pl_structure_1)
-                    node_2 = MANode(name=node_1.name+1, initial=True, end=False,
-                                    control_state=control_state_1)
-                    edge_1 = MAEdge(start=node_1, label=control_state_1,
-                                    end=node_2)
-                    node_3 = MANode(name=node_2.name+1, initial=False,
-                                    end=False, control_state=None)
-                    edge_2 = MAEdge(start=node_2, label=s1, end=node_3)
-                    edge_3 = MAEdge(start=node_3, label=epsilon,
-                                    end=mautomaton_1.init)
-
-                    node_4 = MANode(name=node_3.name+1, initial=False, end=False,
-                                    control_state=None)
-                    edge_4 = MAEdge(start=mautomaton_1.end, label=epsilon,
-                                    end=node_4)
+                    node_1 = MANode(name=mautomaton_2.end.name+1, initial=True,
+                                    end=False, control_state=control_state_1)
+                    edge_1 = MAEdge(start=mautomaton_0.end, 
+                                    label=control_state_1, end=node_1)
+                    edge_2 = MAEdge(start=node_1, label=s1, end=mautomaton_1.init)
                     
+                    # Second configuration.
                     priority_2 = FUNCTION_PRIORITY[s2.procedure_name]
                     pl_structure_2 = PLStructure(ltp=inf, hfp=priority_2,
                                                  gr=tuple(), ga=tuple(), la=tuple())
                     control_state_2 = ControlState(priority=priority_2,
                                                    locks=tuple(),
                                                    pl_structure=pl_structure_2)
-                    node_5 = MANode(name=node_4.name+1, initial=False,
+                    node_2 = MANode(name=node_1.name+1, initial=False,
                                     end=False, control_state=control_state_2)
-                    edge_5 = MAEdge(start=node_4, label=control_state_2,
-                                    end=node_5)
-                    node_6 = MANode(name=node_5.name+1, initial=False,
-                                    end=False, control_state=None)
-                    edge_6 = MAEdge(start=node_5, label=s2, end=node_6)
-                    edge_7 = MAEdge(start=node_6, label=epsilon,
-                                    end=mautomaton_2.init)
+                    edge_3 = MAEdge(start=mautomaton_1.end, label=control_state_2,
+                                    end=node_2)
+                    edge_4 = MAEdge(start=node_2, label=s2, end=mautomaton_2.init)
 
                     # Here is the final M-Automaton that we use to compute the
                     # reachable configurations.
-                    nodes = set([node_1, node_2, node_3, node_4, node_5, node_6])
+                    nodes = set([node_1, node_2])
                     nodes |= set(mautomaton_0.nodes)
                     nodes |= set(mautomaton_1.nodes)
                     nodes |= set(mautomaton_2.nodes)
-                    edges = set([edge_0, edge_1, edge_2, edge_3, edge_4, edge_5,
-                                 edge_6, edge_7])
+                    edges = set([edge_1, edge_2, edge_3, edge_4])
                     edges |= set(mautomaton_0.edges)
                     edges |= set(mautomaton_1.edges)
                     edges |= set(mautomaton_2.edges)
-                    source_nodes = set([node_1, node_4,
+                    source_nodes = set([mautomaton_0.end, mautomaton_1.end,
                                         mautomaton_0.init, mautomaton_1.init])
                     mautomaton = MAutomaton(init=mautomaton_0.init,
                                             end=mautomaton_2.end,
@@ -536,23 +480,30 @@ def run_race_detection(pldpn, global_vars):
                     mautomaton = pre_star(pldpn, mautomaton)
                     mautomaton_draw(mautomaton, "saturated_" + str(num_mautomata))
 
-                    # Check if the initial state is in the automata.
                     print("Computed mautomaton {} corresponding " \
                           "to {} and {}.".format(num_mautomata, s1, s2))
 
+                    # Check if the initial state is in the automata.
                     if check_initial(mautomaton):
                         print("REACHABLE")
                     else:
                         print("UNREACHABLE")
 
 def check_initial(mautomaton):
-    children = get_childrens_depth(mautomaton.init, mautomaton.edges, 2)
+    children = get_children_depth(mautomaton.init, mautomaton.edges, 2)
     for child in children:
         end, path = child
         control_state, top_stack = path
-        if top_stack.procedure_name == "main" and top_stack.control_point == 0 \
-           and end.end:
-            return True
+        if not isinstance(control_state, ControlState) and \
+           not isinstance(top_stack, StackLetter):
+            continue
+        if top_stack.procedure_name == "main" and top_stack.control_point == 0 and\
+           end.end:
+            if control_state.pl_structure:
+                print(control_state.pl_structure)
+                return True
+            else:
+                print("Found but invalid pl-structure.")
     return False
 
 def get_full_mautomaton(pldpn, starting_index, initial_value, end_value):
@@ -578,11 +529,10 @@ def get_full_mautomaton(pldpn, starting_index, initial_value, end_value):
         edges.add(new_edge)
         
     epsilon = StackLetter(procedure_name=None, control_point=None)        
-    back_edge = MAEdge(start=end, label=epsilon, end=start)
-    edges.add(back_edge)
     forw_edge = MAEdge(start=start, label=epsilon, end=end)
-    edges.add(back_edge)
+    back_edge = MAEdge(start=end, label=epsilon, end=start)
     edges.add(forw_edge)
+    edges.add(back_edge)    
     source_nodes = set([start])
     mautomaton = MAutomaton(init=start, end=end, nodes=nodes, edges=edges,
                             source_nodes=source_nodes)
@@ -590,7 +540,7 @@ def get_full_mautomaton(pldpn, starting_index, initial_value, end_value):
 
             
 if __name__ == "__main__":
-    filename = "small"
+    filename = "test"
     clean_file(filename)
     ast = parse_file(filename + '_clean.c')
     global_vars = []

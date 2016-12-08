@@ -7,8 +7,8 @@ void *C(void *arg) {
   printf("C wants the lock\n");    
   //  pthread_spin_lock(&lock);
   printf("C has the lock\n");  
-  int tmp = y;
-  assert(tmp == y);
+  int tmp = x;
+  assert(tmp == x);
   //  pthread_spin_unlock(&lock);
   printf("C released the lock\n");  
   return NULL;
@@ -16,10 +16,10 @@ void *C(void *arg) {
 
 void *D(void *arg) {
   printf("D wants the lock\n");      
-  pthread_spin_lock(&lock);
+  //  pthread_spin_lock(&lock);
   printf("D has the lock\n");  
   y++;
-  pthread_spin_unlock(&lock);
+  //  pthread_spin_unlock(&lock);
   printf("D released the lock\n");  
   return NULL;
 }
