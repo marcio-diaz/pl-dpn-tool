@@ -31,9 +31,17 @@ LockAction = namedtuple("LockAction", ["action", "lock"])
 SpawnAction = namedtuple("SpawnAction", ["procedure", "priority"])
 GlobalAction = namedtuple("GlobalAction", ["action", "variable"])
 ReturnAction = namedtuple("Return", [])
-
 FUNCTION_PRIORITY = {'main': 1}
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 def update(priority, label, pls):
     if pls == False:
@@ -98,12 +106,12 @@ def compose(pl_structure_1, pl_structure_2):
 
     for e in la1:
         if e.action == 'acq' or e.action == 'rel':
-            if e in la2:
+            if (e.lock, e.action) in [(e2.lock, e2.action) for e2 in la2]:
                 return False
 
     for e in la2:
         if e.action == 'acq' or e.action == 'rel':
-            if e in la1:
+            if (e.lock, e.action) in [(e2.lock, e2.action) for e2 in la1]:
                 return False
 
             
@@ -395,7 +403,7 @@ def pre_star(pldpn, mautomaton):
  #                           print("Adding edge (spawn) {}".format(new_edge_1))
                             mautomaton.edges.add(new_edge_1)
 
-        print("size = ", len(mautomaton.edges))
+#        print("size = ", len(mautomaton.edges))
         if new_edges_size == len(mautomaton.edges):
             break
     return mautomaton
@@ -473,21 +481,26 @@ def run_race_detection(pldpn, global_vars):
                                             edges=edges,
                                             source_nodes=source_nodes)
                     # Draw the automaton to a file.
-                    mautomaton_draw(mautomaton, "initial_" + str(num_mautomata))
+#                    mautomaton_draw(mautomaton, "initial_" + str(num_mautomata))
                     num_mautomata += 1
 
                     # Saturate the automaton.
                     mautomaton = pre_star(pldpn, mautomaton)
-                    mautomaton_draw(mautomaton, "saturated_" + str(num_mautomata))
+#                    mautomaton_draw(mautomaton, "saturated_" + str(num_mautomata))
 
-                    print("Computed mautomaton {} corresponding " \
-                          "to {} and {}.".format(num_mautomata, s1, s2))
+                    print("Checking program points {}_{} and {}_{}:".format(\
+                                            s1.procedure_name, s1.control_point, 
+                                            s2.procedure_name, s2.control_point))
 
                     # Check if the initial state is in the automata.
                     if check_initial(mautomaton):
-                        print("REACHABLE")
+                        print(bcolors.FAIL + "DATA RACE FOUND." + bcolors.ENDC)
                     else:
-                        print("UNREACHABLE")
+                        print(bcolors.OKGREEN + "SAFE." + bcolors.ENDC)
+
+
+def run_deadlock_detection(pldpn, global_vars):
+    pass
 
 def check_initial(mautomaton):
     children = get_children_depth(mautomaton.init, mautomaton.edges, 2)
@@ -500,10 +513,9 @@ def check_initial(mautomaton):
         if top_stack.procedure_name == "main" and top_stack.control_point == 0 and\
            end.end:
             if control_state.pl_structure:
-                print(control_state.pl_structure)
                 return True
-            else:
-                print("Found but invalid pl-structure.")
+#            else:
+#                print("Found but invalid pl-structure.")
     return False
 
 def get_full_mautomaton(pldpn, starting_index, initial_value, end_value):
@@ -540,7 +552,8 @@ def get_full_mautomaton(pldpn, starting_index, initial_value, end_value):
 
             
 if __name__ == "__main__":
-    filename = "test"
+    import sys
+    filename = sys.argv[1]
     clean_file(filename)
     ast = parse_file(filename + '_clean.c')
     global_vars = []
