@@ -27,12 +27,12 @@ void *D(void *arg) {
 void *A(void *arg) {
   wait();
   printf("A wants the lock\n");      
-  pthread_spin_lock(&lock);
+  //  pthread_spin_lock(&lock);
   printf("A has the lock\n");
   int tmp = x;
   assert(tmp == x);
   wait();
-  pthread_spin_unlock(&lock);
+  //  pthread_spin_unlock(&lock);
   printf("A released the lock\n");
   create_thread(C, 2);
   return NULL;

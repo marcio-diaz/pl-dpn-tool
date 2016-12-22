@@ -27,6 +27,7 @@ MAutomaton = namedtuple("MAutomaton", ["init", "end", "nodes", "edges",
 PLDPN = namedtuple("PLDPN", ["control_states", "gamma", "rules"])
 LockInfo = namedtuple("LockInfo", ["action", "lock", "p1", "p2"])
 PLRule = namedtuple("PLRule", ["prev_top_stack", "label", "next_top_stack"])
+PushAction = namedtuple("PushAction", ["procedure"])
 LockAction = namedtuple("LockAction", ["action", "lock"])
 SpawnAction = namedtuple("SpawnAction", ["procedure", "priority"])
 GlobalAction = namedtuple("GlobalAction", ["action", "variable"])
@@ -49,7 +50,7 @@ def update(priority, label, pls):
     
     action = label[0]
 
-    if isinstance(label, GlobalAction):
+    if isinstance(label, GlobalAction) or isinstance(label, PushAction):
         return pls
     
     elif isinstance(label, ReturnAction):
@@ -216,6 +217,17 @@ def make_pldpn(procedure_name, procedure_body):
                     gamma.add(prev_top_stack)
                     gamma.add(next_top_stack)                                    
                     control_point += 1
+            else: # Call action.
+                label = PushAction(procedure=call_name)
+                FUNCTION_PRIORITY[call_name] = FUNCTION_PRIORITY[procedure_name]
+                rules.add(PLRule(prev_top_stack=prev_top_stack, label=label,
+                                 next_top_stack=next_top_stack))
+                
+                gamma.add(prev_top_stack)
+                gamma.add(next_top_stack)                                    
+                control_point += 1
+
+                    
                 
         if isinstance(e, c_ast.Decl):
             if isinstance(e.init, c_ast.ID):
@@ -246,7 +258,6 @@ def make_pldpn(procedure_name, procedure_body):
                      next_top_stack=next_top_stack))
     gamma.add(prev_top_stack)
     gamma.add(next_top_stack)
-    
     return control_states, gamma, rules
 
 
@@ -284,7 +295,7 @@ def pre_star(pldpn, mautomaton):
         new_edges_size = len(mautomaton.edges)
 
         for start_node in mautomaton.source_nodes:
-            # First we try to match with a non-spawning rule.
+            # First we try to match with a non-spawning, non-push rule.
             end_nodes_and_paths = get_children_depth(start_node, mautomaton.edges, 2)
             for end_node_path in end_nodes_and_paths:
                 child = end_node_path.child
@@ -344,7 +355,56 @@ def pre_star(pldpn, mautomaton):
                         if new_edge_1 not in mautomaton.edges:
 #                            print("Adding edge {}".format(new_edge_1))
                             mautomaton.edges.add(new_edge_1)
-            
+            # Saturation for push rules.
+            end_nodes_and_paths = get_children_depth(start_node, mautomaton.edges, 3)
+            for end_node_path in end_nodes_and_paths:
+                child = end_node_path.child
+                path = end_node_path.path
+                path_control_state, path_stack_0, path_stack_1 = path
+
+                if not isinstance(path_control_state, ControlState) or \
+                   not isinstance(path_stack_1, StackLetter) or \
+                   not isinstance(path_stack_0, StackLetter):
+                    continue
+                for rule in pldpn.rules:
+                    prev_top_stack = rule.prev_top_stack
+                    label = rule.label
+                    next_top_stack = rule.next_top_stack
+
+                    if not isinstance(label, PushAction):
+                        continue # Only push can match.
+                    
+                    rule_priority = FUNCTION_PRIORITY[next_top_stack.procedure_name]
+                    current_stack = StackLetter(procedure_name=label.procedure,
+                                                control_point=0)
+                    if rule_priority == path_control_state.priority and \
+                       current_stack == path_stack_0:
+                        # This means we can apply the rule over the path.
+#                        print("Applying push rule to path.")
+                        new_pl_structure = update(rule_priority, label,
+                                                  path_control_state.pl_structure)
+                        new_control_state = \
+                                    ControlState(priority=rule_priority,
+                                                 locks=path_control_state.locks,
+                                                 pl_structure=new_pl_structure)
+                        
+                        start_node_cpy = MANode(name=start_node.name,
+                                                initial=False, end=False,
+                                                control_state=new_control_state)
+                        new_edge_0 = MAEdge(start=start_node,
+                                           label=new_control_state,
+                                           end=start_node_cpy)
+                        new_edge_1 = MAEdge(start=start_node_cpy,
+                                            label=prev_top_stack, end=child)
+
+                        if new_edge_0 not in mautomaton.edges:
+ #                           print("Adding edge (spawn) {}".format(new_edge_0))
+                            mautomaton.edges.add(new_edge_0)
+                        
+                        if new_edge_1 not in mautomaton.edges:
+ #                           print("Adding edge (spawn) {}".format(new_edge_1))
+                            mautomaton.edges.add(new_edge_1)
+
             # Saturation for spawning rules.
             end_nodes_and_paths = get_children_depth(start_node, mautomaton.edges, 4)
             for end_node_path in end_nodes_and_paths:
@@ -432,11 +492,16 @@ def run_race_detection(pldpn, global_vars):
     mautomaton_0 = get_full_mautomaton(pldpn, 0, True, False)
     mautomaton_1 = get_full_mautomaton(pldpn, mautomaton_0.end.name+1, False, False)
     mautomaton_2 = get_full_mautomaton(pldpn, mautomaton_1.end.name+1, False, True)
-
+    
     for var in global_vars:
         for a1, s1 in variable_stack_d[var]:
             for a2, s2 in variable_stack_d[var]:
                 if not (a1 == 'read' and a2 == 'read'):
+                    print("Checking program points {}_{} and {}_{}:".format(\
+                                    s1.procedure_name, s1.control_point, 
+                                    s2.procedure_name, s2.control_point),
+                          end=' ')
+                    
                     # First configuration.
                     priority_1 = FUNCTION_PRIORITY[s1.procedure_name]
                     pl_structure_1 = PLStructure(ltp=inf, hfp=priority_1,
@@ -449,7 +514,7 @@ def run_race_detection(pldpn, global_vars):
                     edge_1 = MAEdge(start=mautomaton_0.end, 
                                     label=control_state_1, end=node_1)
                     edge_2 = MAEdge(start=node_1, label=s1, end=mautomaton_1.init)
-                    
+
                     # Second configuration.
                     priority_2 = FUNCTION_PRIORITY[s2.procedure_name]
                     pl_structure_2 = PLStructure(ltp=inf, hfp=priority_2,
@@ -488,9 +553,6 @@ def run_race_detection(pldpn, global_vars):
                     mautomaton = pre_star(pldpn, mautomaton)
 #                    mautomaton_draw(mautomaton, "saturated_" + str(num_mautomata))
 
-                    print("Checking program points {}_{} and {}_{}:".format(\
-                                            s1.procedure_name, s1.control_point, 
-                                            s2.procedure_name, s2.control_point))
 
                     # Check if the initial state is in the automata.
                     if check_initial(mautomaton):
@@ -514,9 +576,22 @@ def check_initial(mautomaton):
            end.end:
             if control_state.pl_structure:
                 return True
-#            else:
-#                print("Found but invalid pl-structure.")
     return False
+
+
+def get_stack_mautomaton(pldpn, node):
+    nodes = set([node])
+    edges = set()
+
+    for stack_letter in pldpn.gamma:
+        new_edge = MAEdge(start=node, label=stack_letter, end=node)
+        edges.add(new_edge)
+
+    mautomaton = MAutomaton(init=node, end=node, nodes=nodes, edges=edges,
+                            source_nodes=set())
+    return mautomaton
+
+    
 
 def get_full_mautomaton(pldpn, starting_index, initial_value, end_value):
     start = MANode(name=len(pldpn.gamma)+starting_index, initial=initial_value,
@@ -574,6 +649,5 @@ if __name__ == "__main__":
         control_states |= cs
         gamma |= g
         rules |= r
-        
     pldpn = PLDPN(control_states=control_states, gamma=gamma, rules=rules)
     run_race_detection(pldpn, global_vars)
