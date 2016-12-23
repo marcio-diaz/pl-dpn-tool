@@ -272,21 +272,47 @@ def get_children_depth(father, edges, max_depth):
             if child_path.child == edge.start:
                 if len(child_path.path) > 0 \
                    and isinstance(child_path.path[-1], StackLetter)\
-                   and child_path.path[-1].procedure_name == None:
+                   and child_path.path[-1].procedure_name == None: # previous epsi
                     if isinstance(edge.label, StackLetter) \
-                       and edge.label.procedure_name == None:
+                       and edge.label.procedure_name == None: # current epsi
                         continue
-                    else:
+                    else: # current not epsi
                         new_child = ChildPath(child=edge.end,
                                               path=child_path.path[:-1] \
                                               + (edge.label,))
-                else:
-                    new_child = ChildPath(child=edge.end,
-                                          path=child_path.path + (edge.label,))
-                if len(new_child.path) < max_depth:
-                    stack.add(new_child)
-                else:
-                    children.add(new_child)
+                        if len(new_child.path) < max_depth:
+                            stack.add(new_child)
+                        elif len(new_child.path) == max_depth:
+                            # It may connect to other nodes
+                            # using epsilon.
+                            stack.add(new_child)
+                            children.add(new_child)
+                            
+                else: # previous not epsi
+                    if isinstance(edge.label, StackLetter) \
+                       and edge.label.procedure_name == None: # current epsi
+                        new_path = child_path.path + (edge.label,)
+                        if len(new_path) <= max_depth:
+                            new_child = ChildPath(child=edge.end,
+                                                  path=new_path)
+                            stack.add(new_child)
+                        elif len(new_path) ==  max_depth:
+                            new_child = ChildPath(child=edge.end,\
+                                                  path=new_path)
+                            stack.add(new_child)                            
+                        else:
+                            new_child = ChildPath(child=edge.end,\
+                                                  path=child_path.path)
+                            children.add(new_child)
+                    else: # current not epsi
+                        new_path = child_path.path + (edge.label,)
+                        new_child = ChildPath(child=edge.end,
+                                              path=new_path)
+                        if len(new_path) < max_depth:
+                            stack.add(new_child)
+                        elif len(new_path) ==  max_depth:
+                            stack.add(new_child)                            
+                            children.add(new_child)
     return tuple(children)
 
 
@@ -356,14 +382,13 @@ def pre_star(pldpn, mautomaton):
 #                            print("Adding edge {}".format(new_edge_1))
                             mautomaton.edges.add(new_edge_1)
             # Saturation for push rules.
-            end_nodes_and_paths = get_children_depth(start_node, mautomaton.edges, 3)
+            end_nodes_and_paths = get_children_depth(start_node, mautomaton.edges, 2)
             for end_node_path in end_nodes_and_paths:
                 child = end_node_path.child
                 path = end_node_path.path
-                path_control_state, path_stack_0, path_stack_1 = path
+                path_control_state, path_stack_0 = path
 
                 if not isinstance(path_control_state, ControlState) or \
-                   not isinstance(path_stack_1, StackLetter) or \
                    not isinstance(path_stack_0, StackLetter):
                     continue
                 for rule in pldpn.rules:
@@ -436,7 +461,6 @@ def pre_star(pldpn, mautomaton):
                        label.priority == path_control_state_1.priority and \
                        spawned_stack == path_stack_1:
                         # This means we can apply the rule over the path.
-
                         new_pl_structure = compose(path_control_state_1.pl_structure,
                                                    path_control_state_0.pl_structure)
                         new_pl_structure = update(rule_priority, label,
