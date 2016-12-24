@@ -34,6 +34,8 @@ GlobalAction = namedtuple("GlobalAction", ["action", "variable"])
 ReturnAction = namedtuple("Return", [])
 FUNCTION_PRIORITY = {'main': 1}
 
+NON_ZERO_PRIORITIES = [1, 2]
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -340,9 +342,11 @@ def pre_star(pldpn, mautomaton):
                     if isinstance(label, SpawnAction):
                         continue # Only non-spawning can match.
                     elif isinstance(label, ReturnAction):
+                        rule_prev_priority = path_control_state.priority                        
                         rule_next_priority = 0 # Thread finish with zero priority.
                     else:
                         rule_prev_priority = path_control_state.priority
+                        rule_next_priority = path_control_state.priority                        
                     
                     if rule_next_priority == path_control_state.priority and \
                        next_top_stack == path_stack:
@@ -521,10 +525,12 @@ def run_race_detection(pldpn, global_vars):
                 if not (a1 == 'read' and a2 == 'read'):
                     print("Checking program points {}_{} and {}_{}:".format(\
                                     s1.procedure_name, s1.control_point, 
-                                    s2.procedure_name, s2.control_point),
-                          end=' ')
-                    for priority_1 in [1,2]:
-                        for priority_2 in [1,2]:
+                                    s2.procedure_name, s2.control_point))
+                    for priority_1 in NON_ZERO_PRIORITIES:
+                        for priority_2 in NON_ZERO_PRIORITIES:
+                            print("{} has priority {}, {} has priority {}:".format(
+                                s1.procedure_name, priority_1,
+                                s2.procedure_name, priority_2), end=' ')
                             # First configuration.
 #                            priority_1 = FUNCTION_PRIORITY[s1.procedure_name]
                             pl_structure_1 = PLStructure(ltp=inf, hfp=priority_1,
