@@ -153,12 +153,11 @@ def compose(pl_structure_1, pl_structure_2):
                 
     return PLStructure(ltp, hfp, tuple(gr), tuple(ga), tuple(la))
                 
-def make_pldpn(procedure_name, procedure_body):
+def make_pldpn(procedure_name, procedure_body, control_point=0):
     control_states = set()
     gamma =set()
     rules = set()
 
-    control_point = 0
     ignore = ["printf", "display", "wait", "init_main_thread", "end_main_thread"]
     
     for e in procedure_body:
@@ -229,10 +228,8 @@ def make_pldpn(procedure_name, procedure_body):
                 gamma.add(prev_top_stack)
                 gamma.add(next_top_stack)                                    
                 control_point += 1
-
-                    
                 
-        if isinstance(e, c_ast.Decl):
+        elif isinstance(e, c_ast.Decl):
             if isinstance(e.init, c_ast.ID):
                 if e.init.name in global_vars:
                     var = e.init.name
@@ -243,7 +240,7 @@ def make_pldpn(procedure_name, procedure_body):
                     gamma.add(next_top_stack)                                    
                     control_point += 1
                     
-        if isinstance(e, c_ast.UnaryOp):
+        elif isinstance(e, c_ast.UnaryOp):
             if e.expr.name in global_vars:
                 var = e.expr.name
                 label = GlobalAction(action="write", variable=var)
@@ -252,6 +249,25 @@ def make_pldpn(procedure_name, procedure_body):
                 gamma.add(prev_top_stack)
                 gamma.add(next_top_stack)                                
                 control_point += 1
+        elif isinstance(e, c_ast.If):
+            cs1, g1, r1 = set(), set(), set()
+            cs2, g2, r2 = set(), set(), set()
+
+            if e.iftrue is not None:
+                cs1, g1, r1, cp1 = make_pldpn(procedure_name,
+                                              e.iftrue.block_items,
+                                              control_point)
+                control_point = cp1
+            if e.iffalse is not None:
+                cs2, g2, r2, cp2 = make_pldpn(procedure_name,
+                                              e.iffalse.block_items,
+                                              control_point)
+                control_point = cp2
+            control_states |= cs1 | cs2
+            gamma |= g1 | g2
+            rules |= r1 | r2                        
+        else:
+            print("Don't know how to process:", e)
 
     prev_top_stack = StackLetter(procedure_name=procedure_name,
                                  control_point=control_point)
@@ -261,7 +277,7 @@ def make_pldpn(procedure_name, procedure_body):
                      next_top_stack=next_top_stack))
     gamma.add(prev_top_stack)
     gamma.add(next_top_stack)
-    return control_states, gamma, rules
+    return control_states, gamma, rules, control_point
 
 
 ChildPath = namedtuple("ChildPath", ["child", "path"])
@@ -529,6 +545,8 @@ def run_race_detection(pldpn, global_vars):
                     print("Checking program points {}_{} and {}_{}:".format(\
                                     s1.procedure_name, s1.control_point, 
                                     s2.procedure_name, s2.control_point))
+                    if s1.procedure_name != 'B' or s2.procedure_name != 'mummy':
+                        continue
                     for priority_1 in NON_ZERO_PRIORITIES:
                         for priority_2 in NON_ZERO_PRIORITIES:
                             for locks_1 in subsets(LOCKS):
@@ -681,7 +699,8 @@ if __name__ == "__main__":
     rules = set()
     
     for k, v in procedures.items():
-        cs, g, r  = make_pldpn(k, v)
+        cs, g, r, _  = make_pldpn(k, v)
+        print(r)
         control_states |= cs
         gamma |= g
         rules |= r
