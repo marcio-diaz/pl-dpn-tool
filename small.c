@@ -12,14 +12,12 @@ void *B(void *arg) {
 
 void mummy() {
   x++;
-
 }
 
 void dummy() {
-  //pthread_spin_lock(&lock);
+  pthread_spin_lock(&lock);
   mummy();
-  //  pthread_spin_unlock(&lock);      
-
+  pthread_spin_unlock(&lock);      
 }
 
 int main() {

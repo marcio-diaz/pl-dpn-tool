@@ -35,6 +35,7 @@ ReturnAction = namedtuple("Return", [])
 FUNCTION_PRIORITY = {'main': 1}
 
 NON_ZERO_PRIORITIES = [1, 2]
+LOCKS = ['l']
 
 class bcolors:
     HEADER = '\033[95m'
@@ -355,6 +356,8 @@ def pre_star(pldpn, mautomaton):
                         new_pl_structure = update(rule_prev_priority, label,
                                                   path_control_state.pl_structure)
                         if isinstance(label, LockAction) and label.action == 'acq':
+                            if label.lock not in path_control_state.locks:
+                                continue
                             new_locks = set(path_control_state.locks) \
                                         - set([label.lock])
                             new_control_state = \
@@ -528,64 +531,68 @@ def run_race_detection(pldpn, global_vars):
                                     s2.procedure_name, s2.control_point))
                     for priority_1 in NON_ZERO_PRIORITIES:
                         for priority_2 in NON_ZERO_PRIORITIES:
-                            print("{} has priority {}, {} has priority {}:".format(
-                                s1.procedure_name, priority_1,
-                                s2.procedure_name, priority_2), end=' ')
-                            # First configuration.
-#                            priority_1 = FUNCTION_PRIORITY[s1.procedure_name]
-                            pl_structure_1 = PLStructure(ltp=inf, hfp=priority_1,
-                                                         gr=tuple(), ga=tuple(), la=tuple())
-                            control_state_1  = ControlState(priority=priority_1,
-                                                            locks=tuple(),
-                                                            pl_structure=pl_structure_1)
-                            node_1 = MANode(name=mautomaton_2.end.name+1, initial=True,
-                                            end=False, control_state=control_state_1)
-                            edge_1 = MAEdge(start=mautomaton_0.end, 
-                                            label=control_state_1, end=node_1)
-                            edge_2 = MAEdge(start=node_1, label=s1, end=mautomaton_1.init)
+                            for locks_1 in subsets(LOCKS):
+                                for locks_2 in subsets(LOCKS):                                
+                                    print("{} has priority {}, {} has priority {},".format(
+                                        s1.procedure_name, priority_1,
+                                        s2.procedure_name, priority_2), end=' ')
+                                    print("{} has locks {}, {} has locks {}:".format(
+                                        s1.procedure_name, locks_1,
+                                        s2.procedure_name, locks_2), end=' ')
+                                    
+                                    # First configuration.
+                                    pl_structure_1 = PLStructure(ltp=inf, hfp=priority_1,
+                                                                 gr=tuple(), ga=tuple(), la=tuple())
+                                    control_state_1  = ControlState(priority=priority_1,
+                                                                    locks=tuple(locks_1),
+                                                                    pl_structure=pl_structure_1)
+                                    node_1 = MANode(name=mautomaton_2.end.name+1, initial=True,
+                                                    end=False, control_state=control_state_1)
+                                    edge_1 = MAEdge(start=mautomaton_0.end, 
+                                                    label=control_state_1, end=node_1)
+                                    edge_2 = MAEdge(start=node_1, label=s1, end=mautomaton_1.init)
 
-                            # Second configuration.
-#                            priority_2 = FUNCTION_PRIORITY[s2.procedure_name]
-                            pl_structure_2 = PLStructure(ltp=inf, hfp=priority_2,
-                                                         gr=tuple(), ga=tuple(), la=tuple())
-                            control_state_2 = ControlState(priority=priority_2,
-                                                           locks=tuple(),
-                                                       pl_structure=pl_structure_2)
-                            node_2 = MANode(name=node_1.name+1, initial=False,
-                                            end=False, control_state=control_state_2)
-                            edge_3 = MAEdge(start=mautomaton_1.end, label=control_state_2,
-                                            end=node_2)
-                            edge_4 = MAEdge(start=node_2, label=s2, end=mautomaton_2.init)
+                                    # Second configuration.
+                                    pl_structure_2 = PLStructure(ltp=inf, hfp=priority_2,
+                                                                 gr=tuple(), ga=tuple(), la=tuple())
+                                    control_state_2 = ControlState(priority=priority_2,
+                                                                   locks=tuple(locks_2),
+                                                                   pl_structure=pl_structure_2)
+                                    node_2 = MANode(name=node_1.name+1, initial=False,
+                                                    end=False, control_state=control_state_2)
+                                    edge_3 = MAEdge(start=mautomaton_1.end, label=control_state_2,
+                                                    end=node_2)
+                                    edge_4 = MAEdge(start=node_2, label=s2, end=mautomaton_2.init)
 
-                            # Here is the final M-Automaton that we use to compute the
-                            # reachable configurations.
-                            nodes = set([node_1, node_2])
-                            nodes |= set(mautomaton_0.nodes)
-                            nodes |= set(mautomaton_1.nodes)
-                            nodes |= set(mautomaton_2.nodes)
-                            edges = set([edge_1, edge_2, edge_3, edge_4])
-                            edges |= set(mautomaton_0.edges)
-                            edges |= set(mautomaton_1.edges)
-                            edges |= set(mautomaton_2.edges)
-                            source_nodes = set([mautomaton_0.end, mautomaton_1.end,
-                                                mautomaton_0.init, mautomaton_1.init])
-                            mautomaton = MAutomaton(init=mautomaton_0.init,
-                                                    end=mautomaton_2.end,
-                                                    nodes=nodes,
-                                                    edges=edges,
-                                                    source_nodes=source_nodes)
-                            # Draw the automaton to a file.
-                            #                    mautomaton_draw(mautomaton, "initial_" + str(num_mautomata))
-                            num_mautomata += 1
-
-                            # Saturate the automaton.
-                            mautomaton = pre_star(pldpn, mautomaton)
-                            # mautomaton_draw(mautomaton, "saturated_" + str(num_mautomata))
-                            # Check if the initial state is in the automata.
-                            if check_initial(mautomaton):
-                                print(bcolors.FAIL + "DATA RACE FOUND." + bcolors.ENDC)
-                            else:
-                                print(bcolors.OKGREEN + "SAFE." + bcolors.ENDC)
+                                    # Here is the final M-Automaton that we use to compute the
+                                    # reachable configurations.
+                                    nodes = set([node_1, node_2])
+                                    nodes |= set(mautomaton_0.nodes)
+                                    nodes |= set(mautomaton_1.nodes)
+                                    nodes |= set(mautomaton_2.nodes)
+                                    edges = set([edge_1, edge_2, edge_3, edge_4])
+                                    edges |= set(mautomaton_0.edges)
+                                    edges |= set(mautomaton_1.edges)
+                                    edges |= set(mautomaton_2.edges)
+                                    source_nodes = set([mautomaton_0.end, mautomaton_1.end,
+                                                        mautomaton_0.init, mautomaton_1.init])
+                                    mautomaton = MAutomaton(init=mautomaton_0.init,
+                                                            end=mautomaton_2.end,
+                                                            nodes=nodes,
+                                                            edges=edges,
+                                                            source_nodes=source_nodes)
+                                    # Draw the automaton to a file.
+                                    #                    mautomaton_draw(mautomaton, "initial_" + str(num_mautomata))
+                                    num_mautomata += 1
+                                    
+                                    # Saturate the automaton.
+                                    mautomaton = pre_star(pldpn, mautomaton)
+                                    # mautomaton_draw(mautomaton, "saturated_" + str(num_mautomata))
+                                    # Check if the initial state is in the automata.
+                                    if check_initial(mautomaton):
+                                        print(bcolors.FAIL + "DATA RACE FOUND." + bcolors.ENDC)
+                                    else:
+                                        print(bcolors.OKGREEN + "SAFE." + bcolors.ENDC)
 
 
 def run_deadlock_detection(pldpn, global_vars):
@@ -600,7 +607,7 @@ def check_initial(mautomaton):
            not isinstance(top_stack, StackLetter):
             continue
         if top_stack.procedure_name == "main" and top_stack.control_point == 0 and\
-           end.end:
+           end.end and len(control_state.locks) == 0 and control_state.priority == 1:
             if control_state.pl_structure:
                 return True
     return False
@@ -629,18 +636,19 @@ def get_full_mautomaton(pldpn, starting_index, initial_value, end_value):
     edges = set()
     
     for i, stack_letter in enumerate(pldpn.gamma):
-        for priority in [1,2]:
-            pl_structure = PLStructure(ltp=inf, hfp=priority, gr=tuple(), ga=tuple(),
-                                       la=tuple())
-            control_state = ControlState(priority=priority, locks=tuple(),
-                                         pl_structure=pl_structure)
-            middle = MANode(name=i+starting_index, initial=False, end=False,
-                            control_state=control_state)
-            nodes.add(middle)
-            new_edge = MAEdge(start=start, label=control_state, end=middle)
-            edges.add(new_edge)
-            new_edge = MAEdge(start=middle, label=stack_letter, end=end)
-            edges.add(new_edge)
+        for priority in NON_ZERO_PRIORITIES:
+            for locks in subsets(LOCKS):
+                pl_structure = PLStructure(ltp=inf, hfp=priority, gr=tuple(), ga=tuple(),
+                                           la=tuple())
+                control_state = ControlState(priority=priority, locks=tuple(locks),
+                                             pl_structure=pl_structure)
+                middle = MANode(name=i+starting_index, initial=False, end=False,
+                                control_state=control_state)
+                nodes.add(middle)
+                new_edge = MAEdge(start=start, label=control_state, end=middle)
+                edges.add(new_edge)
+                new_edge = MAEdge(start=middle, label=stack_letter, end=end)
+                edges.add(new_edge)
         
     epsilon = StackLetter(procedure_name=None, control_point=None)        
     forw_edge = MAEdge(start=start, label=epsilon, end=end)
