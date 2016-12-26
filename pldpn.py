@@ -265,7 +265,15 @@ def make_pldpn(procedure_name, procedure_body, control_point=0):
                 control_point = cp2
             control_states |= cs1 | cs2
             gamma |= g1 | g2
-            rules |= r1 | r2                        
+            rules |= r1 | r2
+        elif isinstance(e, c_ast.While) or isinstance(e, c_ast.For):
+            cs1, g1, r1, cp1 = make_pldpn(procedure_name,
+                                          e.stmt.block_items,
+                                          control_point)
+            control_point = cp1
+            control_states |= cs1
+            gamma |= g1
+            rules |= r1
         else:
             print("Don't know how to process:", e)
 
@@ -700,7 +708,6 @@ if __name__ == "__main__":
     
     for k, v in procedures.items():
         cs, g, r, _  = make_pldpn(k, v)
-        print(r)
         control_states |= cs
         gamma |= g
         rules |= r
