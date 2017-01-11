@@ -4,18 +4,21 @@ int x = 0;
 
 
 void *B(void *arg) {
-  //  pthread_spin_lock(&lock);   
+  pthread_spin_lock(&lock);   
   x++;
-  //  pthread_spin_unlock(&lock);    
-  return NULL;
+  pthread_spin_unlock(&lock);    
 }
 
+void mummy() {
+  int something = 0;
+  for (;something;) {
+    x++;
+  }
+}
 
 void dummy() {
   //  pthread_spin_lock(&lock);
-  int w = 0;
-  if (w == w)
-    x++;
+  mummy();
   //  pthread_spin_unlock(&lock);      
 }
 

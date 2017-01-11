@@ -10,6 +10,10 @@ from itertools import chain, combinations
 from mautomata import *
 from clean import clean_file
 
+# Preprocessing functions.
+from preprocessing.procedure import process_procedure
+
+
 def powerset(iterable):
     s = list(iterable)
     return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
@@ -36,6 +40,8 @@ FUNCTION_PRIORITY = {'main': 1}
 
 NON_ZERO_PRIORITIES = [1, 2]
 LOCKS = ['l']
+
+global_vars = set()
 
 class bcolors:
     HEADER = '\033[95m'
@@ -153,139 +159,6 @@ def compose(pl_structure_1, pl_structure_2):
                 
     return PLStructure(ltp, hfp, tuple(gr), tuple(ga), tuple(la))
                 
-def make_pldpn(procedure_name, procedure_body, control_point=0):
-    control_states = set()
-    gamma =set()
-    rules = set()
-
-    ignore = ["printf", "display", "wait", "init_main_thread", "end_main_thread"]
-    
-    for e in procedure_body:
-        prev_top_stack = StackLetter(procedure_name=procedure_name,
-                                     control_point=control_point)
-        next_top_stack = StackLetter(procedure_name=procedure_name,
-                                     control_point=control_point + 1)
-        if isinstance(e, c_ast.FuncCall):
-            call_name = e.name.name
-            
-            if call_name in ignore:
-                pass
-            elif call_name == "pthread_spin_lock":
-                rules.add(PLRule(prev_top_stack=prev_top_stack,
-                                 label=LockAction(action="acq", lock="l"),
-                                 next_top_stack=next_top_stack))
-                gamma.add(prev_top_stack)
-                gamma.add(next_top_stack)                
-                control_point += 1
-                
-            elif call_name == "pthread_spin_unlock":
-                rules.add(PLRule(prev_top_stack=prev_top_stack,
-                                 label=LockAction(action="rel", lock="l"),
-                                 next_top_stack=next_top_stack))
-                gamma.add(prev_top_stack)
-                gamma.add(next_top_stack)                                
-                control_point += 1
-                
-            elif call_name == "create_thread":
-                new_thread_procedure = e.args.exprs[0].name
-                priority = int(e.args.exprs[1].value)
-                pl_structure = PLStructure(ltp=inf, hfp=priority,
-                                           gr=tuple(), ga=tuple(), la=tuple())
-#                FUNCTION_PRIORITY[new_thread_procedure] = priority
-                control_states.add(ControlState(priority=priority, locks=tuple(),
-                                                pl_structure=pl_structure))
-                label = SpawnAction(procedure=new_thread_procedure,
-                                    priority=priority)
-                rules.add(PLRule(prev_top_stack=prev_top_stack,
-                                 label=label,
-                                 next_top_stack=next_top_stack))
-                gamma.add(prev_top_stack)
-                gamma.add(next_top_stack)                                
-                control_point += 1
-                
-            elif call_name == "assert":
-                label = None
-                if isinstance(e.args.exprs[0].left, c_ast.ID):
-                    var = e.args.exprs[0].left.name
-                    if var in global_vars:
-                        label = GlobalAction(action="read", variable=var)
-                if isinstance(e.args.exprs[0].right, c_ast.ID):
-                    var = e.args.exprs[0].right.name
-                    if var in global_vars:
-                        label = GlobalAction(action="read", variable=var)
-                if label is not None:
-                    rules.add(PLRule(prev_top_stack=prev_top_stack, label=label,
-                                     next_top_stack=next_top_stack))
-                    gamma.add(prev_top_stack)
-                    gamma.add(next_top_stack)                                    
-                    control_point += 1
-            else: # Call action.
-                label = PushAction(procedure=call_name)
-#                FUNCTION_PRIORITY[call_name] = FUNCTION_PRIORITY[procedure_name]
-                rules.add(PLRule(prev_top_stack=prev_top_stack, label=label,
-                                 next_top_stack=next_top_stack))
-                
-                gamma.add(prev_top_stack)
-                gamma.add(next_top_stack)                                    
-                control_point += 1
-                
-        elif isinstance(e, c_ast.Decl):
-            if isinstance(e.init, c_ast.ID):
-                if e.init.name in global_vars:
-                    var = e.init.name
-                    label = GlobalAction(action="read", variable=var)
-                    rules.add(PLRule(prev_top_stack=prev_top_stack, label=label,
-                                     next_top_stack=next_top_stack))
-                    gamma.add(prev_top_stack)
-                    gamma.add(next_top_stack)                                    
-                    control_point += 1
-                    
-        elif isinstance(e, c_ast.UnaryOp):
-            if e.expr.name in global_vars:
-                var = e.expr.name
-                label = GlobalAction(action="write", variable=var)
-                rules.add(PLRule(prev_top_stack=prev_top_stack, label=label,
-                                 next_top_stack=next_top_stack))
-                gamma.add(prev_top_stack)
-                gamma.add(next_top_stack)                                
-                control_point += 1
-        elif isinstance(e, c_ast.If):
-            cs1, g1, r1 = set(), set(), set()
-            cs2, g2, r2 = set(), set(), set()
-
-            if e.iftrue is not None:
-                cs1, g1, r1, cp1 = make_pldpn(procedure_name,
-                                              e.iftrue.block_items,
-                                              control_point)
-                control_point = cp1
-            if e.iffalse is not None:
-                cs2, g2, r2, cp2 = make_pldpn(procedure_name,
-                                              e.iffalse.block_items,
-                                              control_point)
-                control_point = cp2
-            control_states |= cs1 | cs2
-            gamma |= g1 | g2
-            rules |= r1 | r2
-        elif isinstance(e, c_ast.While) or isinstance(e, c_ast.For):
-            cs1, g1, r1, cp1 = make_pldpn(procedure_name,
-                                          e.stmt.block_items,
-                                          control_point)
-            control_point = cp1
-            control_states |= cs1
-            gamma |= g1
-            rules |= r1
-        else:
-            print("Don't know how to process:", e)
-
-    prev_top_stack = StackLetter(procedure_name=procedure_name,
-                                 control_point=control_point)
-    next_top_stack = StackLetter(procedure_name=procedure_name,
-                                 control_point=control_point + 1)
-    rules.add(PLRule(prev_top_stack=prev_top_stack, label=ReturnAction(),
-                     next_top_stack=next_top_stack))
-    gamma.add(prev_top_stack)
-    gamma.add(next_top_stack)
-    return control_states, gamma, rules, control_point
 
 
 ChildPath = namedtuple("ChildPath", ["child", "path"])
@@ -530,7 +403,7 @@ def mautomaton_draw(mautomaton, filename):
     g.draw(filename + '.ps')
 
 
-def run_race_detection(pldpn, global_vars):
+def run_race_detection(pldpn):
     variable_stack_d = dict()
     for rule in pldpn.rules:
         if isinstance(rule.label, GlobalAction):
@@ -553,7 +426,7 @@ def run_race_detection(pldpn, global_vars):
                     print("Checking program points {}_{} and {}_{}:".format(\
                                     s1.procedure_name, s1.control_point, 
                                     s2.procedure_name, s2.control_point))
-                    if s1.procedure_name != 'B' or s2.procedure_name != 'mummy':
+                    if s1.procedure_name != 'B' or s2.procedure_name != 'dummy':
                         continue
                     for priority_1 in NON_ZERO_PRIORITIES:
                         for priority_2 in NON_ZERO_PRIORITIES:
@@ -621,7 +494,7 @@ def run_race_detection(pldpn, global_vars):
                                         print(bcolors.OKGREEN + "SAFE." + bcolors.ENDC)
 
 
-def run_deadlock_detection(pldpn, global_vars):
+def run_deadlock_detection(pldpn):
     pass
 
 def check_initial(mautomaton):
@@ -693,23 +566,18 @@ if __name__ == "__main__":
     filename = sys.argv[1]
     clean_file(filename)
     ast = parse_file(filename + '_clean.c')
-    global_vars = []
     procedures = {}
 
     for e in ast.ext:
         if isinstance(e, c_ast.Decl):
-            global_vars.append(e.name)
+            global_vars.add(e.name)
         if isinstance(e, c_ast.FuncDef):
-            procedures[e.decl.name] = e.body.block_items
+            procedures[e.decl.name] = e.body
         
-    control_states = set()
-    gamma = set()
-    rules = set()
+    control_states, gamma, rules = set(), set(), set()
     
-    for k, v in procedures.items():
-        cs, g, r, _  = make_pldpn(k, v)
-        control_states |= cs
-        gamma |= g
-        rules |= r
+    for procedure_name, procedure_ast in procedures.items():
+        process_procedure(procedure_ast, procedure_name, control_states, gamma,
+                          rules, 0) # control_point = 0
     pldpn = PLDPN(control_states=control_states, gamma=gamma, rules=rules)
-    run_race_detection(pldpn, global_vars)
+    run_race_detection(pldpn)
