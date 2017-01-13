@@ -25,6 +25,5 @@ int main() {
   //  create_thread(A, 1);
   create_thread(B, 1);
   dummy();
-  
   end_main_thread();
 }

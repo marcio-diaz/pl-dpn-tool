@@ -60,12 +60,12 @@ def process_function_call(e, procedure_name, state,
             state.gamma.add(prev_top_stack)
             state.gamma.add(next_top_stack)                                    
             control_point += 1
-        else: # Call action.
-            label = pldpn.PushAction(procedure=call_name)
-            state.rules.add(pldpn.PLRule(prev_top_stack=prev_top_stack, label=label,
-                                         next_top_stack=next_top_stack))
-                
-            state.gamma.add(prev_top_stack)
-            state.gamma.add(next_top_stack)                                    
-            control_point += 1
+    else: # Call action.
+        label = pldpn.PushAction(procedure=call_name)
+        state.rules.add(pldpn.PLRule(prev_top_stack=prev_top_stack, label=label,
+                                     next_top_stack=next_top_stack))
+        
+        state.gamma.add(prev_top_stack)
+        state.gamma.add(next_top_stack)                                    
+        control_point += 1
     return control_point

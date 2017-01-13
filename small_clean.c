@@ -19,6 +19,5 @@ int main() {
 
   create_thread(B, 1);
   dummy();
-  
   end_main_thread();
 }
