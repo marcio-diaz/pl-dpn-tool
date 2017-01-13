@@ -1,5 +1,5 @@
 import pldpn
-from .compound import process_compound
+from preprocessing.simple import process_compound
 
 def process_procedure(ast_node, procedure_name, state, control_point):
     control_point = process_compound(ast_node, procedure_name, state,

@@ -4,6 +4,15 @@ from preprocessing.declarations import process_declaration
 from preprocessing.unary_operator import process_unary_operator
 from preprocessing.if_stmt import process_if_stmt
 from preprocessing.loop import process_loop
+from preprocessing.assignment import process_assignment
+
+
+def process_compound(ast_node, procedure_name, state,
+                     control_point):
+    for child in ast_node.block_items:
+        control_point = process_simple(child, procedure_name,
+                                       state, control_point)
+    return control_point
 
 
 def process_simple(ast_node, procedure_name, state, control_point):

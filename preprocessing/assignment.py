@@ -1,3 +1,4 @@
+from pycparser import c_ast
 
 def get_vars(e):
     vs = set()
@@ -20,11 +21,11 @@ def get_vars(e):
         for a in e.exprs:
             vs |= get_vars(a)
     else:
+        print(e)
         assert(False)    
     return vs
 
-def process_assignment(e, procedure_name, control_states, gamma, rules,
-                       control_point):
+def process_assignment(e, procedure_name, state, control_point):
     lvs = get_vars(e.lvalue)
     rvs = get_vars(e.rvalue)
     glva = lvs & global_vars
@@ -36,17 +37,17 @@ def process_assignment(e, procedure_name, control_states, gamma, rules,
     for v in lgva:
         # add rule for each written global var
         label = GlobalAction(action="write", variable=v)
-        rules.add(PLRule(prev_top_stack=prev_top_stack, label=label,
+        state.rules.add(PLRule(prev_top_stack=prev_top_stack, label=label,
                          next_top_stack=next_top_stack))
-        gamma.add(prev_top_stack)
-        gamma.add(next_top_stack)                                    
+        state.gamma.add(prev_top_stack)
+        state.gamma.add(next_top_stack)                                    
     for v in rgva:
         # add rule for each read global var
         label = GlobalAction(action="read", variable=v)
-        rules.add(PLRule(prev_top_stack=prev_top_stack, label=label,
+        state.rules.add(PLRule(prev_top_stack=prev_top_stack, label=label,
                          next_top_stack=next_top_stack))
-        gamma.add(prev_top_stack)
-        gamma.add(next_top_stack)                                    
+        state.gamma.add(prev_top_stack)
+        state.gamma.add(next_top_stack)                                    
     control_point += 1
     return control_point    
 
