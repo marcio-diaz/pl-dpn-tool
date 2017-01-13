@@ -20,6 +20,10 @@ def get_vars(e):
     elif isinstance(e, c_ast.ExprList):
         for a in e.exprs:
             vs |= get_vars(a)
+    elif isinstance(e, c_ast.TernaryOp):
+        vs |= get_vars(cond)
+        vs |= get_vars(iftrue)
+        vs |= get_vars(iffalse)
     else:
         print(e)
         assert(False)    
