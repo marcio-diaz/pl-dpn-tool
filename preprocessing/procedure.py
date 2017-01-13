@@ -2,7 +2,7 @@ import pldpn
 from preprocessing.simple import process_compound
 
 def process_procedure(ast_node, procedure_name, state, control_point):
-    control_point = process_compound(ast_node, procedure_name, state,
+    control_point = process_compound(ast_node.block_items, procedure_name, state,
                                      control_point)
     prev_top_stack = pldpn.StackLetter(procedure_name=procedure_name,
                                        control_point=control_point)

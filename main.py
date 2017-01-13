@@ -14,7 +14,7 @@ if __name__ == "__main__":
             state.global_vars.add(e.name)
         if isinstance(e, c_ast.FuncDef):
             procedures[e.decl.name] = e.body
-        
+                    
     for procedure_name, procedure_ast in procedures.items():
         process_procedure(procedure_ast, procedure_name, state, 0) # control_point = 0
     pldpn = PLDPN(control_states=state.control_states, gamma=state.gamma,
