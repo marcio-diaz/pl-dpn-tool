@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
-import pygraphviz as pgv
+#import pygraphviz as pgv
 import copy
 from math import inf
 import pickle
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from pycparser import c_parser, c_ast, c_generator, parse_file
 from itertools import chain, combinations
 from mautomata import *
@@ -36,12 +36,12 @@ LockAction = namedtuple("LockAction", ["action", "lock"])
 SpawnAction = namedtuple("SpawnAction", ["procedure", "priority"])
 GlobalAction = namedtuple("GlobalAction", ["action", "variable"])
 ReturnAction = namedtuple("Return", [])
+
 FUNCTION_PRIORITY = {'main': 1}
 
 NON_ZERO_PRIORITIES = [1, 2]
 LOCKS = ['l']
 
-global_vars = set()
 
 class bcolors:
     HEADER = '\033[95m'
@@ -53,6 +53,15 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+
+class State:
+    def __init__(self, control_states=set(), gamma=set(), rules=set(), global_vars=set()):
+        self.control_states = control_states
+        self.gamma = gamma
+        self.rules = rules
+        self.global_vars = global_vars
+
+    
 def update(priority, label, pls):
     if pls == False:
         return False
@@ -403,16 +412,14 @@ def mautomaton_draw(mautomaton, filename):
     g.draw(filename + '.ps')
 
 
-def run_race_detection(pldpn):
-    variable_stack_d = dict()
+def run_race_detection(pldpn, global_vars):
+    variable_stack_d = defaultdict(list)
     for rule in pldpn.rules:
+        #FIXME
         if isinstance(rule.label, GlobalAction):
-            if rule.label.variable in variable_stack_d.keys():
-                variable_stack_d[rule.label.variable].append((rule.label.action, \
-                                                              rule.prev_top_stack))
-            else:
-                variable_stack_d[rule.label.variable] = [(rule.label.action, \
-                                                          rule.prev_top_stack)]
+            print("works")
+            variable_stack_d[rule.label.variable].append((rule.label.action, \
+                                                          rule.prev_top_stack))
     num_mautomata = 0
     epsilon = StackLetter(procedure_name=None, control_point=None)
     mautomaton_0 = get_full_mautomaton(pldpn, 0, True, False)
@@ -423,16 +430,16 @@ def run_race_detection(pldpn):
         for a1, s1 in variable_stack_d[var]:
             for a2, s2 in variable_stack_d[var]:
                 if not (a1 == 'read' and a2 == 'read'):
-                    print("Checking program points {}_{} and {}_{}:".format(\
-                                    s1.procedure_name, s1.control_point, 
-                                    s2.procedure_name, s2.control_point))
-                    if s1.procedure_name != 'B' or s2.procedure_name != 'dummy':
-                        continue
+                    print("Checking program points {}_{} and {}_{}:"
+                          .format(s1.procedure_name, s1.control_point, 
+                                  s2.procedure_name, s2.control_point))
+#                    if s1.procedure_name != 'B' or s2.procedure_name != 'dummy':
+#                        continue
                     for priority_1 in NON_ZERO_PRIORITIES:
                         for priority_2 in NON_ZERO_PRIORITIES:
                             for locks_1 in subsets(LOCKS):
-                                for locks_2 in subsets(LOCKS):                                
-                                    print("{} has priority {}, {} has priority {},".format(
+                                for locks_2 in subsets(LOCKS):
+                                    print("{} has priority {}, {} has priority {}:".format(
                                         s1.procedure_name, priority_1,
                                         s2.procedure_name, priority_2), end=' ')
                                     print("{} has locks {}, {} has locks {}:".format(
@@ -568,16 +575,14 @@ if __name__ == "__main__":
     ast = parse_file(filename + '_clean.c')
     procedures = {}
 
+    state = State()
     for e in ast.ext:
         if isinstance(e, c_ast.Decl):
-            global_vars.add(e.name)
+            state.global_vars.add(e.name)
         if isinstance(e, c_ast.FuncDef):
             procedures[e.decl.name] = e.body
         
-    control_states, gamma, rules = set(), set(), set()
-    
     for procedure_name, procedure_ast in procedures.items():
-        process_procedure(procedure_ast, procedure_name, control_states, gamma,
-                          rules, 0) # control_point = 0
-    pldpn = PLDPN(control_states=control_states, gamma=gamma, rules=rules)
-    run_race_detection(pldpn)
+        process_procedure(procedure_ast, procedure_name, state, 0) # control_point = 0
+    pldpn = PLDPN(control_states=state.control_states, gamma=state.gamma, rules=state.rules)
+    run_race_detection(pldpn, state.global_vars)
