@@ -9,8 +9,10 @@ def clean_file(filename):
     new_file_lines = ['typedef int {};'.format(t) for t in to_define]
     skip_lines_start_with_char = ['#', '/', '*']
     skip_lines_with = ['DEFINE_PER_CPU']
-    delete_words = ['__cpuinit']
-    
+    delete_words = ['__cpuinit', '__noreturn', '__init',
+                    'VMM_DEVTREE_PATH_SEPARATOR_STRING']
+    replace_words = {'for_each_present_cpu':'while'}
+    delete_suffix_start_with = ['/*']
     
     for line in f_read:
         sline = line.lstrip(' \t')
@@ -20,6 +22,13 @@ def clean_file(filename):
             continue
         for w in delete_words:
             line = re.sub(w, '', line)
+        for k, v in replace_words.items():
+            line = re.sub(k, v, line)
+        for w in delete_suffix_start_with:
+            pos = line.find(w)
+            if pos != -1:
+                line = line[:pos] + '\n'
+            
         new_file_lines.append(line)
         
     f_write.write(''.join(new_file_lines))
