@@ -13,6 +13,10 @@ from clean import clean_file
 from preprocessing.procedure import process_procedure
 
 
+lock_proc = "pthread_spin_lock"
+unlock_proc = "pthread_spin_unlock"
+thread_create_proc = "create_thread"
+
 def powerset(iterable):
     s = list(iterable)
     return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
@@ -39,7 +43,7 @@ ReturnAction = namedtuple("Return", [])
 FUNCTION_PRIORITY = {'main': 1}
 
 NON_ZERO_PRIORITIES = [1, 2]
-LOCKS = ['l']
+LOCKS = set()
 
 
 class bcolors:

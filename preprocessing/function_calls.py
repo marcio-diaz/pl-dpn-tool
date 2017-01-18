@@ -1,5 +1,6 @@
 from math import inf
 import pldpn
+from utilities import get_vars
 
 def process_function_call(e, procedure_name, state,
                           control_point):
@@ -12,23 +13,29 @@ def process_function_call(e, procedure_name, state,
     if call_name in ignore:
         pass
     
-    elif call_name == "pthread_spin_lock":
+    elif call_name == pldpn.lock_proc:
+        lock = get_vars(e.args).pop()
+        pldpn.LOCKS.add(lock)
         state.rules.add(pldpn.PLRule(prev_top_stack=prev_top_stack,
-                                     label=LockAction(action="acq", lock="l"),
+                                     label=pldpn.LockAction(action="acq",
+                                                            lock=lock),
                                      next_top_stack=next_top_stack))
         state.gamma.add(prev_top_stack)
         state.gamma.add(next_top_stack)                
         control_point += 1
                 
-    elif call_name == "pthread_spin_unlock":
+    elif call_name == pldpn.unlock_proc:
+        lock = get_vars(e.args).pop()
+        pldpn.LOCKS.add(lock)        
         state.rules.add(pldpn.PLRule(prev_top_stack=prev_top_stack,
-                                     label=LockAction(action="rel", lock="l"),
+                                     label=pldpn.LockAction(action="rel",
+                                                            lock=lock),
                                      next_top_stack=next_top_stack))
         state.gamma.add(prev_top_stack)
         state.gamma.add(next_top_stack)                                
         control_point += 1
                 
-    elif call_name == "create_thread":
+    elif call_name == pldpn.thread_create_proc:
         new_thread_procedure = e.args.exprs[0].name
         priority = int(e.args.exprs[1].value)
         pl_structure = pldpn.PLStructure(ltp=inf, hfp=priority,

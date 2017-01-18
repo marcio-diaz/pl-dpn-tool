@@ -1,22 +1,23 @@
 #include "settings.h"
 
 int x = 0;
-
+int lock;
+int lock2;
 
 void *B(void *arg) {
-  //  pthread_spin_lock(&lock);   
+  pthread_spin_lock(&lock2);   
   x++;
-  //  pthread_spin_unlock(&lock);    
+  pthread_spin_unlock(&lock2);    
   return NULL;
 }
 
 
 void dummy() {
-  //  pthread_spin_lock(&lock);
+  pthread_spin_lock(&lock);
   int w = 0;
   if (w == w)
     x++;
-  //  pthread_spin_unlock(&lock);      
+  pthread_spin_unlock(&lock);      
 }
 
 int main() {
