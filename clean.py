@@ -7,11 +7,12 @@ def clean_file(filename):
                  'irq_flags_t', 'u32', 'pthread_t', 'vmm_scheduler_ctrl',
                  'virtual_addr_t', 'u8']
     new_file_lines = ['typedef int {};'.format(t) for t in to_define]
-    skip_lines_start_with_char = ['#', '/', '*']
+    skip_lines_start_with_char = ['#', '/', '*', '1']
     skip_lines_with = ['DEFINE_PER_CPU']
     delete_words = ['__cpuinit', '__noreturn', '__init',
                     'VMM_DEVTREE_PATH_SEPARATOR_STRING']
-    replace_words = {'for_each_present_cpu':'while'}
+    replace_words = {'for_each_present_cpu':'while',
+                     'list_for_each_entry\(.*\)':'if(1)'}
     delete_suffix_start_with = ['/*']
     
     for line in f_read:
