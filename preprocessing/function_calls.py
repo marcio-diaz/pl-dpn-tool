@@ -41,7 +41,8 @@ def process_function_call(e, procedure_name, state,
                                      label=label,
                                      next_top_stack=next_top_stack))
         state.gamma.add(prev_top_stack)
-        state.gamma.add(next_top_stack)                                
+        state.gamma.add(next_top_stack)
+        state.spawn_end_gamma.add(next_top_stack)
         control_point += 1
                 
     elif call_name == "assert":

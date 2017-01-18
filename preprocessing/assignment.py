@@ -48,16 +48,16 @@ def process_assignment(e, procedure_name, state, control_point):
                                        control_point=control_point + 1)
     for v in glva:
         # add rule for each written global var
-        label = GlobalAction(action="write", variable=v)
-        state.rules.add(PLRule(prev_top_stack=prev_top_stack, label=label,
-                         next_top_stack=next_top_stack))
+        label = pldpn.GlobalAction(action="write", variable=v)
+        state.rules.add(pldpn.PLRule(prev_top_stack=prev_top_stack, label=label,
+                                     next_top_stack=next_top_stack))
         state.gamma.add(prev_top_stack)
         state.gamma.add(next_top_stack)                                    
     for v in grva:
         # add rule for each read global var
-        label = GlobalAction(action="read", variable=v)
-        state.rules.add(PLRule(prev_top_stack=prev_top_stack, label=label,
-                         next_top_stack=next_top_stack))
+        label = pldpn.GlobalAction(action="read", variable=v)
+        state.rules.add(pldpn.PLRule(prev_top_stack=prev_top_stack, label=label,
+                                     next_top_stack=next_top_stack))
         state.gamma.add(prev_top_stack)
         state.gamma.add(next_top_stack)                                    
     control_point += 1

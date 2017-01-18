@@ -18,7 +18,8 @@ def process_compound(ast_node, procedure_name, state,
 def process_simple(ast_node, procedure_name, state, control_point):
     if isinstance(ast_node, c_ast.Return) or isinstance(ast_node, c_ast.Break) \
        or isinstance(ast_node, c_ast.EmptyStatement) \
-       or isinstance(ast_node, c_ast.Default):
+       or isinstance(ast_node, c_ast.Default) \
+       or isinstance(ast_node, c_ast.Continue):
         pass
     elif isinstance(ast_node, c_ast.Label):
         control_point = process_simple(ast_node.stmt, procedure_name, state,
@@ -42,8 +43,8 @@ def process_simple(ast_node, procedure_name, state, control_point):
         control_point = process_if_stmt(ast_node, procedure_name, state,
                                         control_point)
     elif isinstance(ast_node, c_ast.While) or isinstance(ast_node, c_ast.For):
-        control_point = process_compound(ast_node.stmt.block_items, procedure_name,
-                                         state, control_point)
+        control_point = process_simple(ast_node.stmt, procedure_name, state,
+                                       control_point)
     elif isinstance(ast_node, c_ast.Assignment):
         control_point = process_assignment(ast_node, procedure_name,
                                            state, control_point)

@@ -18,5 +18,5 @@ if __name__ == "__main__":
     for procedure_name, procedure_ast in procedures.items():
         process_procedure(procedure_ast, procedure_name, state, 0) # control_point = 0
     pldpn = PLDPN(control_states=state.control_states, gamma=state.gamma,
-                  rules=state.rules)
+                  rules=state.rules, spawn_end_gamma=state.spawn_end_gamma)
     run_race_detection(pldpn, state.global_vars)

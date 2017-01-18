@@ -27,7 +27,7 @@ MAEdge = namedtuple("MAEdge", ["start", "label", "end"])
 PLStructure = namedtuple("PLStructure", ["ltp", "hfp", "gr", "ga", "la"])
 MAutomaton = namedtuple("MAutomaton", ["init", "end", "nodes", "edges",
                                        "source_nodes"])
-PLDPN = namedtuple("PLDPN", ["control_states", "gamma", "rules"])
+PLDPN = namedtuple("PLDPN", ["control_states", "gamma", "rules", "spawn_end_gamma"])
 LockInfo = namedtuple("LockInfo", ["action", "lock", "p1", "p2"])
 PLRule = namedtuple("PLRule", ["prev_top_stack", "label", "next_top_stack"])
 PushAction = namedtuple("PushAction", ["procedure"])
@@ -54,11 +54,13 @@ class bcolors:
 
 
 class State:
-    def __init__(self, control_states=set(), gamma=set(), rules=set(), global_vars=set()):
+    def __init__(self, control_states=set(), gamma=set(), rules=set(),
+                 global_vars=set(), spawn_end_gamma=set()):
         self.control_states = control_states
         self.gamma = gamma
         self.rules = rules
         self.global_vars = global_vars
+        self.spawn_end_gamma = spawn_end_gamma
 
     
 def update(priority, label, pls):
@@ -176,6 +178,8 @@ def get_children_depth(father, edges, max_depth):
     children = set()
     while stack:
         child_path = stack.pop()
+#        print("stack len " + "* " * 50, len(stack))
+#        print("child len " + "* " * 50, len(child_path.path))
         for edge in edges:
             if child_path.child == edge.start:
                 if len(child_path.path) > 0 \
@@ -204,11 +208,7 @@ def get_children_depth(father, edges, max_depth):
                             new_child = ChildPath(child=edge.end,
                                                   path=new_path)
                             stack.add(new_child)
-                        elif len(new_path) ==  max_depth:
-                            new_child = ChildPath(child=edge.end,\
-                                                  path=new_path)
-                            stack.add(new_child)                            
-                        else:
+                        elif len(new_path) == max_depth + 1:
                             new_child = ChildPath(child=edge.end,\
                                                   path=child_path.path)
                             children.add(new_child)
@@ -225,9 +225,11 @@ def get_children_depth(father, edges, max_depth):
 
 
 def pre_star(pldpn, mautomaton):
+#    print("on pre_star")
     while True:
         new_edges_size = len(mautomaton.edges)
-
+#        print("new edges size=", new_edges_size)
+#        print("source_nodes=", mautomaton.source_nodes)
         for start_node in mautomaton.source_nodes:
             # First we try to match with a non-spawning, non-push rule.
             end_nodes_and_paths = get_children_depth(start_node, mautomaton.edges, 2)
@@ -399,6 +401,7 @@ def pre_star(pldpn, mautomaton):
 #        print("size = ", len(mautomaton.edges))
         if new_edges_size == len(mautomaton.edges):
             break
+#    print("out pre_star")
     return mautomaton
 
 def mautomaton_draw(mautomaton, filename):
@@ -537,7 +540,7 @@ def get_full_mautomaton(pldpn, starting_index, initial_value, end_value):
     nodes = set([start, end])
     edges = set()
     
-    for i, stack_letter in enumerate(pldpn.gamma):
+    for i, stack_letter in enumerate(pldpn.spawn_end_gamma):
         for priority in NON_ZERO_PRIORITIES:
             for locks in subsets(LOCKS):
                 pl_structure = PLStructure(ltp=inf, hfp=priority, gr=tuple(), ga=tuple(),
