@@ -3,6 +3,7 @@
 #import pygraphviz as pgv
 import sys
 import copy
+import time
 from math import inf
 import pickle
 from collections import namedtuple, defaultdict
@@ -428,81 +429,102 @@ def run_race_detection(pldpn, global_vars):
     mautomaton_0 = get_full_mautomaton(pldpn, 0, True, False)
     mautomaton_1 = get_full_mautomaton(pldpn, mautomaton_0.end.name+1, False, False)
     mautomaton_2 = get_full_mautomaton(pldpn, mautomaton_1.end.name+1, False, True)
-    
-    for var in global_vars:
-        for a1, s1 in variable_stack_d[var]:
-            for a2, s2 in variable_stack_d[var]:
-                if not (a1 == 'read' and a2 == 'read'):
-                    print("Checking program points {}_{} and {}_{}:"
-                          .format(s1.procedure_name, s1.control_point, 
-                                  s2.procedure_name, s2.control_point))
-#                    if s1.procedure_name != 'B' or s2.procedure_name != 'dummy':
-#                        continue
-                    for priority_1 in NON_ZERO_PRIORITIES:
-                        for priority_2 in NON_ZERO_PRIORITIES:
-                            for locks_1 in subsets(LOCKS):
-                                for locks_2 in subsets(LOCKS):
-                                    print("{} has priority {}, {} has priority {}:".format(
-                                        s1.procedure_name, priority_1,
-                                        s2.procedure_name, priority_2), end=' ')
-                                    print("{} has locks {}, {} has locks {}:".format(
-                                        s1.procedure_name, locks_1,
-                                        s2.procedure_name, locks_2), end=' ')
-                                    
-                                    # First configuration.
-                                    pl_structure_1 = PLStructure(ltp=inf, hfp=priority_1,
-                                                                 gr=tuple(), ga=tuple(), la=tuple())
-                                    control_state_1  = ControlState(priority=priority_1,
-                                                                    locks=tuple(locks_1),
-                                                                    pl_structure=pl_structure_1)
-                                    node_1 = MANode(name=mautomaton_2.end.name+1, initial=True,
-                                                    end=False, control_state=control_state_1)
-                                    edge_1 = MAEdge(start=mautomaton_0.end, 
-                                                    label=control_state_1, end=node_1)
-                                    edge_2 = MAEdge(start=node_1, label=s1, end=mautomaton_1.init)
 
-                                    # Second configuration.
-                                    pl_structure_2 = PLStructure(ltp=inf, hfp=priority_2,
-                                                                 gr=tuple(), ga=tuple(), la=tuple())
-                                    control_state_2 = ControlState(priority=priority_2,
-                                                                   locks=tuple(locks_2),
-                                                                   pl_structure=pl_structure_2)
-                                    node_2 = MANode(name=node_1.name+1, initial=False,
-                                                    end=False, control_state=control_state_2)
-                                    edge_3 = MAEdge(start=mautomaton_1.end, label=control_state_2,
-                                                    end=node_2)
-                                    edge_4 = MAEdge(start=node_2, label=s2, end=mautomaton_2.init)
-
-                                    # Here is the final M-Automaton that we use to compute the
-                                    # reachable configurations.
-                                    nodes = set([node_1, node_2])
-                                    nodes |= set(mautomaton_0.nodes)
-                                    nodes |= set(mautomaton_1.nodes)
-                                    nodes |= set(mautomaton_2.nodes)
-                                    edges = set([edge_1, edge_2, edge_3, edge_4])
-                                    edges |= set(mautomaton_0.edges)
-                                    edges |= set(mautomaton_1.edges)
-                                    edges |= set(mautomaton_2.edges)
-                                    source_nodes = set([mautomaton_0.end, mautomaton_1.end,
-                                                        mautomaton_0.init, mautomaton_1.init])
-                                    mautomaton = MAutomaton(init=mautomaton_0.init,
-                                                            end=mautomaton_2.end,
-                                                            nodes=nodes,
-                                                            edges=edges,
-                                                            source_nodes=source_nodes)
-                                    # Draw the automaton to a file.
-                                    #                    mautomaton_draw(mautomaton, "initial_" + str(num_mautomata))
-                                    num_mautomata += 1
-                                    
-                                    # Saturate the automaton.
-                                    mautomaton = pre_star(pldpn, mautomaton)
-                                    # mautomaton_draw(mautomaton, "saturated_" + str(num_mautomata))
-                                    # Check if the initial state is in the automata.
-                                    if check_initial(mautomaton):
-                                        print(bcolors.FAIL + "DATA RACE FOUND." + bcolors.ENDC)
-                                    else:
-                                        print(bcolors.OKGREEN + "SAFE." + bcolors.ENDC)
-
+    combinations = [ (a1, s1, a2, s2, p1, p2, l1, l2)
+                     for var in global_vars
+                     for a1, s1 in variable_stack_d[var]
+                     for a2, s2 in variable_stack_d[var]
+                     for p1 in NON_ZERO_PRIORITIES
+                     for p2 in NON_ZERO_PRIORITIES
+                     for l1 in subsets(LOCKS)
+                     for l2 in subsets(LOCKS)
+                     if not (a1 == 'read' and a2 == 'read')]
+    tot = len(combinations)
+    i = 0
+    start = time.time()
+    for a1, s1, a2, s2, priority_1, priority_2, locks_1, locks_2 in combinations:
+        sys.stdout.write("\t" + str((i*100)//tot) + "%")
+        i += 1
+    # First configuration.
+        pl_structure_1 = PLStructure(ltp=inf,
+                                     hfp=priority_1,
+                                     gr=tuple(),
+                                     ga=tuple(),
+                                     la=tuple())
+        control_state_1  = \
+                           ControlState(priority=priority_1,
+                                        locks=tuple(locks_1),
+                                        pl_structure=pl_structure_1)
+        node_1 = MANode(name=mautomaton_2.end.name+1,
+                        initial=True,
+                        end=False,
+                        control_state=control_state_1)
+        edge_1 = MAEdge(start=mautomaton_0.end, 
+                        label=control_state_1,
+                        end=node_1)
+        edge_2 = MAEdge(start=node_1, label=s1,
+                        end=mautomaton_1.init)
+        
+        # Second configuration.
+        pl_structure_2 = PLStructure(ltp=inf,
+                                     hfp=priority_2,
+                                     gr=tuple(),
+                                     ga=tuple(),
+                                     la=tuple())
+        control_state_2 = \
+                          ControlState(priority=priority_2,
+                                       locks=tuple(locks_2),
+                                       pl_structure=pl_structure_2)
+        node_2 = MANode(name=node_1.name+1,
+                        initial=False,
+                        end=False,
+                        control_state=control_state_2)
+        edge_3 = MAEdge(start=mautomaton_1.end,
+                        label=control_state_2,
+                        end=node_2)
+        edge_4 = MAEdge(start=node_2, label=s2,
+                        end=mautomaton_2.init)
+        
+        # Here is the final M-Automaton that we
+        # use to compute the
+        # reachable configurations.
+        nodes = set([node_1, node_2])
+        nodes |= set(mautomaton_0.nodes)
+        nodes |= set(mautomaton_1.nodes)
+        nodes |= set(mautomaton_2.nodes)
+        edges = set([edge_1, edge_2, edge_3, edge_4])
+        edges |= set(mautomaton_0.edges)
+        edges |= set(mautomaton_1.edges)
+        edges |= set(mautomaton_2.edges)
+        source_nodes = set([mautomaton_0.end,
+                            mautomaton_1.end,
+                            mautomaton_0.init,
+                            mautomaton_1.init])
+        mautomaton = MAutomaton(init=mautomaton_0.init,
+                                end=mautomaton_2.end,
+                                nodes=nodes,
+                                edges=edges,
+                                source_nodes=source_nodes)
+        # Draw the automaton to a file.
+        #  mautomaton_draw(mautomaton, "initial_"
+        # + str(num_mautomata))
+        num_mautomata += 1
+        
+        # Saturate the automaton.
+        mautomaton = pre_star(pldpn, mautomaton)
+        # mautomaton_draw(mautomaton, "saturated_"
+        # + str(num_mautomata))
+        # Check if the initial state is in the automata.
+        if check_initial(mautomaton):
+            sys.stdout.write(". " + str(int(time.time()-start)) + " sec.")
+            print(bcolors.FAIL + " DATA RACE FOUND." + bcolors.ENDC)
+            print(a1, s1, a2, s2, locks_1, locks_2)
+            break
+        else:
+            sys.stdout.write(". " + str(int(time.time()-start)) + " sec.")
+            sys.stdout.write(bcolors.OKGREEN + " SAFE." + bcolors.ENDC + "\r")
+            sys.stdout.flush()            
+            
 
 def run_deadlock_detection(pldpn):
     pass
