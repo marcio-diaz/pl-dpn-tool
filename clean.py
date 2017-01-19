@@ -1,8 +1,8 @@
 import re
 
 def clean_file(filename):
-    f_read = open(filename + '.c', 'r')
-    f_write = open(filename + '_clean.c', 'w')
+    f_read = open(filename, 'r')
+    f_write = open(filename + '_clean', 'w')
     to_define = ['vmm_spinlock_t', 'u64', 'bool', 'arch_regs_t', 'vmm_rwlock_t',
                  'irq_flags_t', 'u32', 'pthread_t', 'vmm_scheduler_ctrl',
                  'virtual_addr_t', 'u8']
