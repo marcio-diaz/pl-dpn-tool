@@ -5,7 +5,7 @@ def clean_file(filename):
     f_write = open(filename + '_clean', 'w')
     to_define = ['vmm_spinlock_t', 'u64', 'bool', 'arch_regs_t', 'vmm_rwlock_t',
                  'irq_flags_t', 'u32', 'pthread_t', 'vmm_scheduler_ctrl',
-                 'virtual_addr_t', 'u8']
+                 'virtual_addr_t', 'u8', 'virtual_size_t']
     new_file_lines = ['typedef int {};'.format(t) for t in to_define]
     skip_lines_start_with_char = ['#', '/', '*', '1']
     skip_lines_with = ['DEFINE_PER_CPU']
