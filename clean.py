@@ -10,7 +10,8 @@ def clean_file(filename):
     skip_lines_start_with_char = ['#', '/', '*', '1']
     skip_lines_with = ['DEFINE_PER_CPU']
     delete_words = ['__cpuinit', '__noreturn', '__init',
-                    'VMM_DEVTREE_PATH_SEPARATOR_STRING']
+                    'VMM_DEVTREE_PATH_SEPARATOR_STRING',
+                    'struct vmm_semaphore_resource,']
     replace_words = {'for_each_present_cpu':'while',
                      'list_for_each_entry\(.*\)':'if(1)'}
     delete_suffix_start_with = ['/*']
