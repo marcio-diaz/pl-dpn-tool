@@ -42,7 +42,8 @@ def process_simple(ast_node, procedure_name, state, control_point):
     elif isinstance(ast_node, c_ast.If):
         control_point = process_if_stmt(ast_node, procedure_name, state,
                                         control_point)
-    elif isinstance(ast_node, c_ast.While) or isinstance(ast_node, c_ast.For):
+    elif isinstance(ast_node, c_ast.While) or isinstance(ast_node, c_ast.For) \
+         or isinstance(ast_node, c_ast.DoWhile):
         control_point = process_simple(ast_node.stmt, procedure_name, state,
                                        control_point)
     elif isinstance(ast_node, c_ast.Assignment):
