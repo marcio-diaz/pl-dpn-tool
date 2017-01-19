@@ -19,7 +19,7 @@ def process_simple(ast_node, procedure_name, state, control_point):
     if isinstance(ast_node, c_ast.Return) or isinstance(ast_node, c_ast.Break) \
        or isinstance(ast_node, c_ast.EmptyStatement) \
        or isinstance(ast_node, c_ast.Default) \
-       or isinstance(ast_node, c_ast.Continue):
+       or isinstance(ast_node, c_ast.Continue) or isinstance(ast_node, c_ast.Cast) :
         pass
     elif isinstance(ast_node, c_ast.Label):
         control_point = process_simple(ast_node.stmt, procedure_name, state,

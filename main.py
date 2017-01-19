@@ -36,6 +36,10 @@ if __name__ == "__main__":
         for i, filename in enumerate(c_files):
             print("Parsing {} of {}: {}".format(i+1, len(c_files), filename))
             process_file(filename, state)
+        print(state.control_states)
+        print(state.gamma)
+        print(state.rules)
+        print(state.global_vars)                        
         pldpn = PLDPN(control_states=state.control_states, gamma=state.gamma,
                       rules=state.rules, spawn_end_gamma=state.spawn_end_gamma)
         run_race_detection(pldpn, state.global_vars)
