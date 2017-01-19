@@ -1,10 +1,14 @@
 from math import inf
 import pldpn
 from utilities import get_vars
+from pycparser import c_ast
 
 def process_function_call(e, procedure_name, state,
                           control_point):
-    call_name = e.name.name
+    if isinstance(e.name, c_ast.UnaryOp):
+        call_name = e.name.expr.name
+    else:
+        call_name = e.name.name
     ignore = ["printf", "display", "wait", "init_main_thread", "end_main_thread"]
     prev_top_stack = pldpn.StackLetter(procedure_name=procedure_name,
                                        control_point=control_point)

@@ -7,12 +7,12 @@ def clean_file(filename):
                  'irq_flags_t', 'u32', 'pthread_t', 'vmm_scheduler_ctrl',
                  'virtual_addr_t', 'u8', 'virtual_size_t', 'physical_addr_t',
                  'physical_size_t', 'atomic_t', 'vmm_iommu_fault_handler_t',
-                 'dma_addr_t', 'size_t']
+                 'dma_addr_t', 'size_t', 'off_t']
     new_file_lines = ['typedef int {};'.format(t) for t in to_define]
     skip_lines_start_with_char = ['#', '/', '1']
     skip_lines_start_with_two_char = ['* ', '*/', '*\n']    
     skip_lines_with = ['DEFINE_PER_CPU']
-    delete_words = ['__cpuinit', '__noreturn', '__init', '__exit',
+    delete_words = ['__cpuinit', '__noreturn', '__init', '__exit', '__notrace',
                     'VMM_DEVTREE_PATH_SEPARATOR_STRING',
                     'struct vmm_semaphore_resource,',
                     'VMM_EXPORT_SYMBOL\(.*\);',
@@ -23,14 +23,16 @@ def clean_file(filename):
 		    'MODULE_INIT,',
 		    'MODULE_EXIT\);',
                     'VMM_DECLARE_MODULE\(MODULE_DESC,',
-                    'unsigned long addr_merge,', 'PRIPADDR']
+                    'unsigned long addr_merge,', 'PRIPADDR', 'PRISIZE',
+                    'struct vmm_region,']
     replace_words = {'for_each_present_cpu':'while',
-                     'for_each_cpu\(.*\)':'while(1)',                     
+                     'for_each_cpu\(.*\)':'while(1)',
+                     'rbtree_postorder_for_each_entry_safe\(.*\)':'while(1)',
+                     'vmm_devtree_for_each_child\(.*\)':'while(1)',
                      'list_for_each_entry\(.*\)':'if(1)',
                      'vmm_chardev_doread\(.*':'vmm_chardev_doread(',
                      'vmm_chardev_dowrite\(.*':'vmm_chardev_dowrite(',
-                     'container_of\(.*\)':'1',
-                     'u8 .*\)':')'}
+                     'container_of\(.*\)':'1'}
     delete_suffix_start_with = ['/*']
     
     for i, line in enumerate(f_read):
