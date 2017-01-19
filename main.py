@@ -33,7 +33,8 @@ if __name__ == "__main__":
     if args.directory:
         c_files = glob.glob(args.directory + "*.c")
         state = State()
-        for filename in c_files:
+        for i, filename in enumerate(c_files):
+            print("Processing {} of {}: {}".format(i+1, len(c_files), filename))
             process_file(filename, state)
         pldpn = PLDPN(control_states=state.control_states, gamma=state.gamma,
                       rules=state.rules, spawn_end_gamma=state.spawn_end_gamma)

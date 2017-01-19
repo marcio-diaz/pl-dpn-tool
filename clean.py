@@ -13,7 +13,10 @@ def clean_file(filename):
                     'VMM_DEVTREE_PATH_SEPARATOR_STRING',
                     'struct vmm_semaphore_resource,']
     replace_words = {'for_each_present_cpu':'while',
-                     'list_for_each_entry\(.*\)':'if(1)'}
+                     'list_for_each_entry\(.*\)':'if(1)',
+                     'vmm_chardev_doread\(.*':'vmm_chardev_doread(',
+                     'vmm_chardev_dowrite\(.*':'vmm_chardev_dowrite(',     
+                     'u8 .*\)':')'}
     delete_suffix_start_with = ['/*']
     
     for line in f_read:
