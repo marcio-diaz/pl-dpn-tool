@@ -5,7 +5,8 @@ def clean_file(filename):
     f_write = open(filename + '_clean', 'w')
     to_define = ['vmm_spinlock_t', 'u64', 'bool', 'arch_regs_t', 'vmm_rwlock_t',
                  'irq_flags_t', 'u32', 'pthread_t', 'vmm_scheduler_ctrl',
-                 'virtual_addr_t', 'u8', 'virtual_size_t']
+                 'virtual_addr_t', 'u8', 'virtual_size_t', 'physical_addr_t',
+                 'physical_size_t']
     new_file_lines = ['typedef int {};'.format(t) for t in to_define]
     skip_lines_start_with_char = ['#', '/', '*', '1']
     skip_lines_with = ['DEFINE_PER_CPU']
@@ -13,13 +14,15 @@ def clean_file(filename):
                     'VMM_DEVTREE_PATH_SEPARATOR_STRING',
                     'struct vmm_semaphore_resource,']
     replace_words = {'for_each_present_cpu':'while',
+                     'for_each_cpu\(.*\)':'while(1)',                     
                      'list_for_each_entry\(.*\)':'if(1)',
                      'vmm_chardev_doread\(.*':'vmm_chardev_doread(',
-                     'vmm_chardev_dowrite\(.*':'vmm_chardev_dowrite(',     
+                     'vmm_chardev_dowrite\(.*':'vmm_chardev_dowrite(',
+                     'container_of\(.*\)':'1',
                      'u8 .*\)':')'}
     delete_suffix_start_with = ['/*']
     
-    for line in f_read:
+    for i, line in enumerate(f_read):
         sline = line.lstrip(' \t')
         if sline[0] in skip_lines_start_with_char:
             continue

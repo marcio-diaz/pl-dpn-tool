@@ -2,7 +2,7 @@ from pycparser import c_ast
 
 def get_vars(e):
     vs = set()
-    if e is None:
+    if e is None or isinstance(e, c_ast.Typename):
         pass
     elif isinstance(e, str):
         vs.add(e)
@@ -31,6 +31,8 @@ def get_vars(e):
         vs |= get_vars(e.right)
     elif isinstance(e, c_ast.Cast):
         vs |= get_vars(e.expr)
+    elif isinstance(e, c_ast.ArrayRef):
+        vs |= get_vars(e.name)
     else:
         print(e)
         assert(False)    
