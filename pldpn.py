@@ -181,6 +181,7 @@ ChildPath = namedtuple("ChildPath", ["child", "path"])
 def get_children_depth(father, edges, max_depth):
     stack = set([ChildPath(child=father, path=tuple())])
     children = set()
+    print("inside get children, depth=", max_depth)
     while stack:
         child_path = stack.pop()
 #        print("stack len " + "* " * 50, len(stack))
@@ -226,6 +227,7 @@ def get_children_depth(father, edges, max_depth):
                         elif len(new_path) ==  max_depth:
                             stack.add(new_child)                            
                             children.add(new_child)
+    print("outside get children")
     return tuple(children)
 
 
@@ -255,11 +257,11 @@ def pre_star(pldpn, mautomaton):
                     if isinstance(label, SpawnAction):
                         continue # Only non-spawning can match.
                     elif isinstance(label, ReturnAction):
-                        rule_prev_priority = path_control_state.priority                        
+                        rule_prev_priority = path_control_state.priority
                         rule_next_priority = 0 # Thread finish with zero priority.
                     else:
                         rule_prev_priority = path_control_state.priority
-                        rule_next_priority = path_control_state.priority                        
+                        rule_next_priority = path_control_state.priority
                     
                     if rule_next_priority == path_control_state.priority and \
                        next_top_stack == path_stack:
@@ -429,7 +431,9 @@ def run_race_detection(pldpn, global_vars):
     mautomaton_0 = get_full_mautomaton(pldpn, 0, True, False)
     mautomaton_1 = get_full_mautomaton(pldpn, mautomaton_0.end.name+1, False, False)
     mautomaton_2 = get_full_mautomaton(pldpn, mautomaton_1.end.name+1, False, True)
-
+    print("edges of mautomaton0 = ", len(mautomaton_0.edges))
+    print("edges of mautomaton1 = ", len(mautomaton_1.edges))
+    print("edges of mautomaton2 = ", len(mautomaton_2.edges))    
     combinations = [ (a1, s1, a2, s2, p1, p2, l1, l2)
                      for var in global_vars
                      for a1, s1 in variable_stack_d[var]
@@ -440,10 +444,13 @@ def run_race_detection(pldpn, global_vars):
                      for l2 in subsets(LOCKS)
                      if not (a1 == 'read' and a2 == 'read')]
     tot = len(combinations)
+    print("combinations = ", tot)
     i = 0
     start = time.time()
+    print("Searching for errors.", end=" ")
     for a1, s1, a2, s2, priority_1, priority_2, locks_1, locks_2 in combinations:
         sys.stdout.write("\t" + str((i*100)//tot) + "%")
+        sys.stdout.flush()
         i += 1
     # First configuration.
         pl_structure_1 = PLStructure(ltp=inf,

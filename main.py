@@ -34,12 +34,11 @@ if __name__ == "__main__":
         c_files = glob.glob(args.directory + "*.c")
         state = State()
         for i, filename in enumerate(c_files):
-            print("Parsing {} of {}: {}".format(i+1, len(c_files), filename))
+            sys.stdout.write("Parsing {} of {}: {}"
+                             .format(i+1, len(c_files), filename) + "\r")
+            sys.stdout.flush()
             process_file(filename, state)
-        print(state.control_states)
-        print(state.gamma)
-        print(state.rules)
-        print(state.global_vars)                        
+        print("Parsing of files completed." + " " * 50)
         pldpn = PLDPN(control_states=state.control_states, gamma=state.gamma,
                       rules=state.rules, spawn_end_gamma=state.spawn_end_gamma)
         run_race_detection(pldpn, state.global_vars)
