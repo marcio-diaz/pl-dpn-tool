@@ -21,13 +21,16 @@ def clean_file(filename):
                  'virtual_addr_t', 'u8', 'virtual_size_t', 'physical_addr_t',
                  'physical_size_t', 'atomic_t', 'vmm_iommu_fault_handler_t',
                  'dma_addr_t', 'size_t', 'off_t', 'vmm_dr_release_t',
-                 'vmm_dr_match_t', 'vmm_clocksource_init_t', 's64', 'va_list']
+                 'vmm_dr_match_t', 'vmm_clocksource_init_t', 's64', 'va_list',
+                 'vmm_host_irq_handler_t', 'vmm_host_irq_function_t',
+                 'vmm_host_irq_init_t', 'Elf_Ehdr', 'Elf_Shdr', 'Elf_Sym', 's16',
+                 'vmm_clockchip_init_t']
     new_file_lines = ['typedef int {};'.format(t) for t in to_define]
     skip_lines_start_with_char = ['#', '/']
-    skip_lines_start_with_two_char = ['* ', '*/', '*\n', '*\t']    
+    skip_lines_start_with_two_char = ['*/', '*\n', '*\t']    
     skip_lines_with = ['DEFINE_PER_CPU', 'asm']
     delete_words = ['__initdata','__cpuinit', '__noreturn', '__init',
-                    '__exit', '__notrace', '__weak', 
+                    '__exit', '__notrace', '__weak', '__read_mostly',
                     'VMM_DEVTREE_PATH_SEPARATOR_STRING,',                    
                     'VMM_DEVTREE_PATH_SEPARATOR_STRING',
                     'struct vmm_semaphore_resource,',
@@ -44,9 +47,10 @@ def clean_file(filename):
                     'VMM_DECLARE_MODULE\(MODULE_DESC,',
                     'unsigned long addr_merge,', 'PRIPADDR', 'PRISIZE', 'PRIx64',
                     'struct vmm_region,', 'struct vmm_timer_event,',
-                    'struct vmm_device,', 'struct vmm_work,',
+                    'struct vmm_device,', 'struct vmm_work,', 'struct vmm_module,',
                     'struct vmm_vcpu_resource,', 'struct vmm_vcpu,',
-                    'struct vmm_guest_request,']
+                    'struct vmm_guest_request,', 'struct host_mhash_entry,',
+    		    'struct vmm_devtree_attr,', 'struct vmm_devtree_node,']
     replace_words = {'for_each_present_cpu':'while',
                      'for_each_cpu\(.*\)':'while(1)',
                      'rbtree_postorder_for_each_entry_safe\(.*\)':'while(1)',
@@ -56,9 +60,11 @@ def clean_file(filename):
                      'vmm_chardev_dowrite\(.*':'vmm_chardev_dowrite(',
                      'container_of\(.*\)':'1',
                      'va_arg\(.*\)':'va_arg(1)',
+                     'align\(.*\)':'1',
                      'sizeof\(int\)':'1',
                      'list_for_each_entry_safe_reverse\(':'while(',
                      'list_for_each_entry_safe\(':'while(',
+                     'vmm_devtree_for_each_attr\(.*\)':'while(1)',
                      'list_for_each_entry_reverse\(':'while('}
     
     delete_suffix_start_with = ['/*']

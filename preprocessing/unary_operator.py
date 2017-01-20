@@ -3,7 +3,8 @@ from pycparser import c_ast
 
 def process_unary_operator(ast_node, procedure_name, state, control_point):
     if isinstance(ast_node.expr, c_ast.ID) \
-       or isinstance(ast_node.expr, c_ast.StructRef):
+       or isinstance(ast_node.expr, c_ast.StructRef) \
+       or isinstance(ast_node.expr, c_ast.ArrayRef):
         if ast_node.expr.name in state.global_vars:
             prev_top_stack = pldpn.StackLetter(procedure_name=procedure_name,
                                                control_point=control_point)
