@@ -1,7 +1,18 @@
 import re
 
+def remove_comments(filename):
+    with open(filename, 'r') as f:
+        data = f.read()
+        # remove all occurance streamed comments (/*COMMENT */) from string
+        data = re.sub(re.compile("/\*.*?\*/", re.DOTALL) , "", data)
+        # remove all occurance singleline comments (//COMMENT\n ) from string        
+        data = re.sub(re.compile("//.*?\n" ) ,"" ,data) 
+    with open(filename + "_without_comments", 'w') as f:
+        f.write(data)
+
 def clean_file(filename):
-    f_read = open(filename, 'r')
+    remove_comments(filename)
+    f_read = open(filename + "_without_comments", 'r')
     f_write = open(filename + '_clean', 'w')
     to_define = ['vmm_spinlock_t', 'u64', 'u16', 'bool', 'arch_regs_t',
                  'vmm_rwlock_t', 'resource_size_t', 'loff_t',
