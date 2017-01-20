@@ -6,7 +6,8 @@ def remove_comments(filename):
         # remove all occurance streamed comments (/*COMMENT */) from string
         data = re.sub(re.compile("/\*.*?\*/", re.DOTALL) , "", data)
         # remove all occurance singleline comments (//COMMENT\n ) from string        
-        data = re.sub(re.compile("//.*?\n" ) ,"" ,data) 
+        data = re.sub(re.compile("//.*?\n" ) ,"" ,data)
+        data = re.sub(re.compile("\\\\\n" ) ,"" ,data)         
     with open(filename + "_without_comments", 'w') as f:
         f.write(data)
 
@@ -22,11 +23,11 @@ def clean_file(filename):
                  'dma_addr_t', 'size_t', 'off_t', 'vmm_dr_release_t',
                  'vmm_dr_match_t', 'vmm_clocksource_init_t', 's64', 'va_list']
     new_file_lines = ['typedef int {};'.format(t) for t in to_define]
-    skip_lines_start_with_char = ['#', '/', '1']
+    skip_lines_start_with_char = ['#', '/']
     skip_lines_start_with_two_char = ['* ', '*/', '*\n', '*\t']    
     skip_lines_with = ['DEFINE_PER_CPU', 'asm']
-    delete_words = ['__cpuinit', '__noreturn', '__init', '__exit', '__notrace',
-                    '__weak', 
+    delete_words = ['__initdata','__cpuinit', '__noreturn', '__init',
+                    '__exit', '__notrace', '__weak', 
                     'VMM_DEVTREE_PATH_SEPARATOR_STRING,',                    
                     'VMM_DEVTREE_PATH_SEPARATOR_STRING',
                     'struct vmm_semaphore_resource,',
