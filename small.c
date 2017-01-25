@@ -1,7 +1,6 @@
 #include "settings.h"
 
 int x = 0;
-int lock;
 int lock2;
 
 void *B(void *arg) {
@@ -12,19 +11,13 @@ void *B(void *arg) {
 }
 
 
-void dummy() {
-  pthread_spin_lock(&lock);
-  int w = 0;
-  if (w == w)
-    x++;
-  pthread_spin_unlock(&lock);      
-}
 
 int main() {
   init_main_thread(1);
 
-  //  create_thread(A, 1);
+  //create_thread(A, 1);
   create_thread(B, 1);
-  create_thread(dummy, 1);
+  x++;  
+  //  create_thread(dummy, 1);
   end_main_thread();
 }
