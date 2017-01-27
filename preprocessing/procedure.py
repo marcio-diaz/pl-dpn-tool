@@ -13,5 +13,5 @@ def process_procedure(ast_node, procedure_name, state, control_point):
                                  next_top_stack=next_top_stack))
     state.gamma.add(prev_top_stack)
     state.gamma.add(next_top_stack)
-    state.spawn_end_gamma.add(next_top_stack)
+    state.spawn_end_gamma.add(prev_top_stack)
     

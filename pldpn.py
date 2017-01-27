@@ -483,7 +483,7 @@ def run_race_detection(pldpn, global_vars):
         edges |= set(mautomaton_1.edges)
         edges |= set(mautomaton_2.edges)
         source_nodes = set([mautomaton_0.end, mautomaton_1.end, mautomaton_0.init,
-                            mautomaton_1.init])
+                            mautomaton_1.init, mautomaton_2.init, mautomaton_2.end])
         mautomaton = MAutomaton(init=mautomaton_0.init, end=mautomaton_2.end,
                                 nodes=nodes, edges=edges, source_nodes=source_nodes)
         # Draw the automaton to a file.
@@ -492,8 +492,7 @@ def run_race_detection(pldpn, global_vars):
         num_mautomata += 1
         
         # Saturate the automaton.
-        mautomaton, places= pre_star2(pldpn, mautomaton)
-
+        mautomaton, places = pre_star2(pldpn, mautomaton)
 
                         
         # Check if the initial state is in the automata.
