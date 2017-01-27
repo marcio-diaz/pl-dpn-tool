@@ -547,22 +547,6 @@ def get_full_mautomaton(pldpn, starting_index, initial_value, end_value):
                  end=end_value, control_state=None)
     nodes = set([start, end])
     edges = set()
-    
-    for i, stack_letter in enumerate(pldpn.spawn_end_gamma):
-        for priority in NON_ZERO_PRIORITIES:
-            for locks in subsets(LOCKS):
-                pl_structure = PLStructure(ltp=inf, hfp=priority, gr=tuple(),
-                                           ga=tuple(), la=tuple())
-                control_state = ControlState(priority=priority, locks=tuple(locks),
-                                             pl_structure=pl_structure)
-                middle = MANode(name=i+starting_index, initial=False, end=False,
-                                control_state=control_state)
-                nodes.add(middle)
-                new_edge = MAEdge(start=start, label=control_state, end=middle)
-                edges.add(new_edge)
-                new_edge = MAEdge(start=middle, label=stack_letter, end=end)
-                edges.add(new_edge)
-        
     epsilon = StackLetter(procedure_name=None, control_point=None)        
     forw_edge = MAEdge(start=start, label=epsilon, end=end)
     back_edge = MAEdge(start=end, label=epsilon, end=start)
@@ -595,6 +579,7 @@ def preprocess(mautomaton):
                         if isinstance(cs, ControlState) \
                            and isinstance(sl, StackLetter):
                             places[sl].add((start_node, next_node, cs))
+                            
                 elif path_len == 4 and extra:
                     stack.append((start_node, path, next_node, False))
                     cs1, sl1, cs2, sl2 = path
@@ -631,7 +616,8 @@ def apply_rule(places, rule):
         for (start_node, next_node, control_state) in places[new_stack_letter]:
             new_pl_structure = update(control_state.priority, rule.label,
                                       control_state.pl_structure)
-            new_control_state = ControlState(priority, locks, new_pl_structure)
+            new_control_state = ControlState(control_state.priority,
+                                             control_state.locks, new_pl_structure)
             start_node_cpy = MANode(name=start_node.name, initial=False, end=False,
                                     control_state=new_control_state)
             new_edge_0 = MAEdge(start=start_node, label=new_control_state,
@@ -694,6 +680,51 @@ def apply_rule(places, rule):
             new_edges.add(new_edge_1)
             places[rule.prev_top_stack].add((start_node, next_node,
                                              new_control_state))
+            
+        for (start_node, next_node, cs2) in places[rule.next_top_stack]:
+            cs1 = ControlState(rule.label.priority,
+                               tuple(),
+                               PLStructure(inf, 0, tuple(), tuple(), tuple()))
+            new_pl_structure = compose(cs1.pl_structure, cs2.pl_structure)
+            new_pl_structure = update(cs2.priority, rule.label, new_pl_structure)
+            new_control_state = ControlState(cs2.priority, cs2.locks,
+                                             new_pl_structure)
+            start_node_cpy = MANode(name=start_node.name, initial=False, end=False,
+                                    control_state=new_control_state)
+            new_edge_0 = MAEdge(start=start_node, label=new_control_state,
+                                end=start_node_cpy)
+            new_edge_1 = MAEdge(start=start_node_cpy, label=rule.prev_top_stack,
+                                end=next_node)
+            new_edges.add(new_edge_0)
+            new_edges.add(new_edge_1)
+            places[rule.prev_top_stack].add((start_node, next_node,
+                                             new_control_state))
+            
+        for (start_node, next_node, cs1) in places[new_stack_letter]:
+            if cs1.priority != rule.label.priority or len(cs1.locks) != 0:
+                continue
+            for priority in NON_ZERO_PRIORITIES:
+                cs2 = ControlState(priority,
+                                   tuple(),
+                                   PLStructure(inf, 0, tuple(),
+                                               tuple(), tuple()))
+                new_pl_structure = compose(cs1.pl_structure, cs2.pl_structure)
+                new_pl_structure = update(cs2.priority, rule.label,
+                                          new_pl_structure)
+                new_control_state = ControlState(cs2.priority, cs2.locks,
+                                                 new_pl_structure)
+                start_node_cpy = MANode(name=start_node.name, initial=False,
+                                        end=False,
+                                        control_state=new_control_state)
+                new_edge_0 = MAEdge(start=start_node, label=new_control_state,
+                                    end=start_node_cpy)
+                new_edge_1 = MAEdge(start=start_node_cpy,
+                                    label=rule.prev_top_stack,
+                                    end=next_node)
+                new_edges.add(new_edge_0)
+                new_edges.add(new_edge_1)
+                places[rule.prev_top_stack].add((start_node, next_node,
+                                                 new_control_state))
         return new_edges, places
     elif isinstance(rule.label, GlobalAction):
         new_edges = set()

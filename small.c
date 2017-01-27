@@ -7,32 +7,32 @@ int y = 0;
 int z = 0;
 
 void *A(void *arg) {
-  //  pthread_spin_lock(&lock1);   
+   pthread_spin_lock(&lock1);   
   x++;
-  //pthread_spin_unlock(&lock1);    
+    pthread_spin_unlock(&lock1);    
   return NULL;
 }
 
 
 
 void *B(void *arg) {
-  //  pthread_spin_lock(&lock2);   
+    pthread_spin_lock(&lock1);   
   x++;
-  //  pthread_spin_unlock(&lock2);    
+    pthread_spin_unlock(&lock1);    
   return NULL;
 }
 
 void *C(void *arg) {
-  //  pthread_spin_lock(&lock2);   
+    pthread_spin_lock(&lock2);   
   y++;
-  //  pthread_spin_unlock(&lock2);    
+    pthread_spin_unlock(&lock2);    
   return NULL;
 }
 
 void *D(void *arg) {
-  //  pthread_spin_lock(&lock2);   
-  z++;
-  //  pthread_spin_unlock(&lock2);    
+    pthread_spin_lock(&lock1);   
+  y++;
+    pthread_spin_unlock(&lock1);    
   return NULL;
 }
 
