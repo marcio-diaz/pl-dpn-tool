@@ -43,7 +43,7 @@ ReturnAction = namedtuple("Return", [])
 
 FUNCTION_PRIORITY = {'main': 1}
 
-NON_ZERO_PRIORITIES = [1, 2]
+NON_ZERO_PRIORITIES = [1]
 LOCKS = set()
 
 
@@ -137,11 +137,10 @@ def compose(pl_structure_1, pl_structure_2):
             if (e.lock, e.action) in [(e2.lock, e2.action) for e2 in la2]:
                 return False
 
-    for e in la2:
-        if e.action == 'acq' or e.action == 'rel':
-            if (e.lock, e.action) in [(e2.lock, e2.action) for e2 in la1]:
-                return False
-
+#    for e in la2:
+#        if e.action == 'acq' or e.action == 'rel':
+#            if (e.lock, e.action) in [(e2.lock, e2.action) for e2 in la1]:
+#                return False
             
     ltp = min(ltp1, ltp2)
     hfp = max(hfp1, hfp2)
@@ -447,10 +446,10 @@ def run_race_detection(pldpn, global_vars):
     print("combinations ", tot)
     print("Searching for errors.")
     for a1, s1, a2, s2, priority_1, priority_2, locks_1, locks_2 in combinations:
-#        sys.stdout.write("\t" + str((i*100)//tot) + "%")
-#        sys.stdout.flush()
+        sys.stdout.write("\t" + str((i*100)//tot) + "%")
+        sys.stdout.flush()
         i += 1
-        print(i)
+
         # First configuration.
         pl_structure_1 = PLStructure(ltp=inf, hfp=priority_1, gr=tuple(), ga=tuple(),
                                      la=tuple())
@@ -493,7 +492,10 @@ def run_race_detection(pldpn, global_vars):
         num_mautomata += 1
         
         # Saturate the automaton.
-        mautomaton = pre_star2(pldpn, mautomaton)
+        mautomaton, places= pre_star2(pldpn, mautomaton)
+
+
+                        
         # Check if the initial state is in the automata.
         if check_initial(mautomaton):
 #            sys.stdout.write(". " + str(int(time.time()-start)) + " sec.")
@@ -517,6 +519,7 @@ def check_initial(mautomaton):
         if not isinstance(control_state, ControlState) and \
            not isinstance(top_stack, StackLetter):
             continue
+        
         if top_stack.procedure_name == "main" and top_stack.control_point == 0 and\
            end.end and len(control_state.locks) == 0 and control_state.priority == 1:
             if control_state.pl_structure:
@@ -549,8 +552,8 @@ def get_full_mautomaton(pldpn, starting_index, initial_value, end_value):
     for i, stack_letter in enumerate(pldpn.spawn_end_gamma):
         for priority in NON_ZERO_PRIORITIES:
             for locks in subsets(LOCKS):
-                pl_structure = PLStructure(ltp=inf, hfp=priority, gr=tuple(), ga=tuple(),
-                                           la=tuple())
+                pl_structure = PLStructure(ltp=inf, hfp=priority, gr=tuple(),
+                                           ga=tuple(), la=tuple())
                 control_state = ControlState(priority=priority, locks=tuple(locks),
                                              pl_structure=pl_structure)
                 middle = MANode(name=i+starting_index, initial=False, end=False,
@@ -574,7 +577,7 @@ def get_full_mautomaton(pldpn, starting_index, initial_value, end_value):
 
 
 def preprocess(mautomaton):
-    places = defaultdict(list)
+    places = defaultdict(set)
     # Create the adjacency list.
     children = defaultdict(list)
     for edge in mautomaton.edges:
@@ -592,7 +595,7 @@ def preprocess(mautomaton):
                         cs, sl = path
                         if isinstance(cs, ControlState) \
                            and isinstance(sl, StackLetter):
-                            places[sl].append((start_node, next_node, cs))
+                            places[sl].add((start_node, next_node, cs))
                 elif path_len == 4 and extra:
                     stack.append((start_node, path, next_node, False))
                     cs1, sl1, cs2, sl2 = path
@@ -600,8 +603,7 @@ def preprocess(mautomaton):
                        and isinstance(sl1, StackLetter) \
                        and isinstance(cs2, ControlState) \
                        and isinstance(sl2, StackLetter):
-                        places[(sl1, sl2)].append((start_node, next_node,
-                                                   (cs1, cs2)))
+                        places[(sl1, sl2)].add((start_node, next_node, (cs1, cs2)))
             else: # non-epsilon edge
                 if path_len < 4:
                     new_path = path + (label,)
@@ -610,20 +612,20 @@ def preprocess(mautomaton):
                         cs, sl = new_path
                         if isinstance(cs, ControlState) \
                            and isinstance(sl, StackLetter):
-                            places[sl].append((start_node, next_node, cs))
+                            places[sl].add((start_node, next_node, cs))
                     if path_len == 3:
                         cs1, sl1, cs2, sl2 = new_path
                         if isinstance(cs1, ControlState) \
                            and isinstance(sl1, StackLetter) \
                            and isinstance(cs2, ControlState) \
                            and isinstance(sl2, StackLetter):
-                            places[(sl1, sl2)].append((start_node, next_node,
-                                                       (cs1, cs2)))
+                            places[(sl1, sl2)].add((start_node, next_node,
+                                                    (cs1, cs2)))
+
     return places
 
 
 def apply_rule(places, rule):
-
     if isinstance(rule.label, PushAction):
         new_edges = set()
         new_stack_letter = StackLetter(rule.label.procedure, 0)
@@ -639,8 +641,9 @@ def apply_rule(places, rule):
                                 end=next_node)
             new_edges.add(new_edge_0)
             new_edges.add(new_edge_1)
-            places[rule.prev_top_stack].append((start_node, next_node,
-                                                new_control_state))
+            places[rule.prev_top_stack].add((start_node, next_node,
+                                             new_control_state))
+            
         return new_edges, places
     elif isinstance(rule.label, LockAction):
         new_edges = set()
@@ -667,17 +670,17 @@ def apply_rule(places, rule):
                                 end=next_node)
             new_edges.add(new_edge_0)
             new_edges.add(new_edge_1)
-            places[rule.prev_top_stack].append((start_node, next_node,
-                                                new_control_state))
+            places[rule.prev_top_stack].add((start_node, next_node,
+                                             new_control_state))
         return new_edges, places
     elif isinstance(rule.label, SpawnAction):
         new_edges = set()
         new_stack_letter = StackLetter(rule.label.procedure, 0)
-        path = (new_stack_letter, rule.next_top_stack) 
+        path = (new_stack_letter, rule.next_top_stack)
         for (start_node, next_node, (cs1, cs2)) in places[path]:
-            print("acasha")
             if cs1.priority != rule.label.priority or len(cs1.locks) != 0:
                 continue
+
             new_pl_structure = compose(cs1.pl_structure, cs2.pl_structure)
             new_pl_structure = update(cs2.priority, rule.label, new_pl_structure)
             new_control_state = ControlState(cs2.priority, cs2.locks,
@@ -690,8 +693,8 @@ def apply_rule(places, rule):
                                 end=next_node)
             new_edges.add(new_edge_0)
             new_edges.add(new_edge_1)
-            places[rule.prev_top_stack].append((start_node, next_node,
-                                                new_control_state))
+            places[rule.prev_top_stack].add((start_node, next_node,
+                                             new_control_state))
         return new_edges, places
     elif isinstance(rule.label, GlobalAction):
         new_edges = set()
@@ -709,13 +712,14 @@ def apply_rule(places, rule):
                                 end=next_node)
             new_edges.add(new_edge_0)
             new_edges.add(new_edge_1)
-            places[rule.prev_top_stack].append((start_node, next_node,
-                                                new_control_state))
+            places[rule.prev_top_stack].add((start_node, next_node,
+                                             new_control_state))
         return new_edges, places
     elif isinstance(rule.label, ReturnAction):
         return [], places                
     else:
         assert(False)
+
 
 def pre_star2(pldpn, mautomaton):
     # Preprocess the automaton to find the places to apply the rules.
@@ -726,5 +730,12 @@ def pre_star2(pldpn, mautomaton):
             new_edges, places = apply_rule(places, rule)
             mautomaton.edges.update(new_edges)
         if edges_size == len(mautomaton.edges):
-            break
-    return mautomaton
+            new_places = preprocess(mautomaton)
+            for k, v in chain(new_places.items(), places.items()):
+                new_places[k].update(v)
+            if sum([len(v) for k, v in places.items()]) \
+               == sum([len(v) for k, v in new_places.items()]):
+                break
+            else:
+                places = new_places
+    return mautomaton, places
