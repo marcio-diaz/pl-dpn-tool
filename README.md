@@ -37,4 +37,4 @@ For running the tests you can do:
 
 ### Architecture
 
-![Architecture of the tool](architecture.png)
+![Architecture of the tool](architecture2.png)
