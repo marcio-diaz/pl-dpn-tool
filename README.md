@@ -37,7 +37,7 @@ For running the tests you can do:
 
 ### Architecture
 
-<img src="architecture.png" width="500">
+<img src="architecture.png" width="800">
 
 The tool executes forth steps in order to analize the program:
 
