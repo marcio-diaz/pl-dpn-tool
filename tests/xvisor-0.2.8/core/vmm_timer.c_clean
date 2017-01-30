@@ -1,0 +1,328 @@
+typedef int vmm_spinlock_t;typedef int u64;typedef int u16;typedef int bool;typedef int arch_regs_t;typedef int vmm_rwlock_t;typedef int resource_size_t;typedef int loff_t;typedef int irq_flags_t;typedef int u32;typedef int pthread_t;typedef int vmm_scheduler_ctrl;typedef int virtual_addr_t;typedef int u8;typedef int virtual_size_t;typedef int physical_addr_t;typedef int physical_size_t;typedef int atomic_t;typedef int vmm_iommu_fault_handler_t;typedef int dma_addr_t;typedef int size_t;typedef int off_t;typedef int vmm_dr_release_t;typedef int vmm_dr_match_t;typedef int vmm_clocksource_init_t;typedef int s64;typedef int va_list;typedef int vmm_host_irq_handler_t;typedef int vmm_host_irq_function_t;typedef int vmm_host_irq_init_t;typedef int Elf_Ehdr;typedef int Elf_Shdr;typedef int Elf_Sym;typedef int s16;typedef int vmm_clockchip_init_t;typedef int pthread_spinlock_t;
+
+
+
+struct vmm_timer_local_ctrl {
+	struct vmm_timecounter tc;
+	struct vmm_clockchip *cc;
+	bool started;
+	bool inprocess;
+	u64 next_event;
+	struct vmm_timer_event *curr;
+	vmm_rwlock_t event_list_lock;
+	struct dlist event_list;
+};
+
+
+u64  vmm_timer_timestamp_for_profile(void)
+{
+	return vmm_timecounter_read_for_profile(&this_cpu(tlc).tc);
+}
+
+u64 vmm_timer_timestamp(void)
+{
+	u64 ret;
+	irq_flags_t flags;
+
+	arch_cpu_irq_save(flags);
+	ret = vmm_timecounter_read(&this_cpu(tlc).tc);
+	arch_cpu_irq_restore(flags);
+
+	return ret;
+}
+
+
+static void __timer_schedule_next_event(struct vmm_timer_local_ctrl *tlcp)
+{
+	u64 tstamp;
+	struct vmm_timer_event *e;
+
+	
+	if ((tlcp->started == FALSE) || (tlcp->inprocess == TRUE)) {
+		return;
+	}
+
+	
+	if (list_empty(&tlcp->event_list)) {
+		return;
+	}
+
+	
+	e = list_entry(list_first(&tlcp->event_list), 
+		       
+		       active_head);
+
+	
+	tlcp->curr = e;
+	tstamp = vmm_timer_timestamp();
+	if (tstamp < e->expiry_tstamp) {
+		tlcp->next_event = e->expiry_tstamp;
+		vmm_clockchip_program_event(tlcp->cc, 
+				    tstamp, e->expiry_tstamp);
+	} else {
+		tlcp->next_event = tstamp;
+		vmm_clockchip_program_event(tlcp->cc, tstamp, tstamp);
+	}
+}
+
+
+static void __timer_event_stop(struct vmm_timer_event *ev)
+{
+	irq_flags_t flags;
+	struct vmm_timer_local_ctrl *tlcp;
+
+	if (!ev->active_state) {
+		return;
+	}
+
+	tlcp = &per_cpu(tlc, ev->active_hcpu);
+
+	vmm_write_lock_irqsave_lite(&tlcp->event_list_lock, flags);
+
+	ev->active_state = FALSE;
+	list_del(&ev->active_head);
+	ev->expiry_tstamp = 0;
+
+	vmm_write_unlock_irqrestore_lite(&tlcp->event_list_lock, flags);
+}
+
+
+static void timer_clockchip_event_handler(struct vmm_clockchip *cc)
+{
+	irq_flags_t flags, flags1;
+	struct vmm_timer_event *e;
+	struct vmm_timer_local_ctrl *tlcp = &this_cpu(tlc);
+
+	vmm_read_lock_irqsave_lite(&tlcp->event_list_lock, flags);
+
+	tlcp->inprocess = TRUE;
+
+	
+	while (!list_empty(&tlcp->event_list)) {
+		e = list_entry(list_first(&tlcp->event_list),
+			        active_head);
+		
+		if (e->expiry_tstamp <= vmm_timer_timestamp()) {
+			
+			vmm_read_unlock_irqrestore_lite(&tlcp->event_list_lock, flags);
+			
+			tlcp->curr = NULL;
+			
+			vmm_spin_lock_irqsave_lite(&e->active_lock, flags1);
+			__timer_event_stop(e);
+			vmm_spin_unlock_irqrestore_lite(&e->active_lock, flags1);
+			
+			e->handler(e);
+			
+			vmm_read_lock_irqsave_lite(&tlcp->event_list_lock, flags);
+		} else {
+			
+			break;
+		}
+	}
+
+	tlcp->inprocess = FALSE;
+
+	
+	__timer_schedule_next_event(tlcp);
+
+	vmm_read_unlock_irqrestore_lite(&tlcp->event_list_lock, flags);
+}
+
+bool vmm_timer_event_pending(struct vmm_timer_event *ev)
+{
+	bool ret;
+	irq_flags_t flags;
+
+	if (!ev) {
+		return FALSE;
+	}
+
+	vmm_spin_lock_irqsave_lite(&ev->active_lock, flags);
+	ret = ev->active_state;
+	vmm_spin_unlock_irqrestore_lite(&ev->active_lock, flags);
+
+	return ret;
+}
+
+u64 vmm_timer_event_expiry_time(struct vmm_timer_event *ev)
+{
+	u64 exp_time;
+	irq_flags_t flags;
+
+	if (!ev) {
+		return FALSE;
+	}
+
+	vmm_spin_lock_irqsave_lite(&ev->active_lock, flags);
+	exp_time = ev->expiry_tstamp;
+	vmm_spin_unlock_irqrestore_lite(&ev->active_lock, flags);
+
+	return exp_time;
+}
+
+int vmm_timer_event_start(struct vmm_timer_event *ev, u64 duration_nsecs)
+{
+	u32 hcpu;
+	u64 tstamp;
+	bool found_pos = FALSE;
+	irq_flags_t flags, flags1;
+	struct vmm_timer_event *e = NULL;
+	struct vmm_timer_local_ctrl *tlcp;
+
+	if (!ev) {
+		return VMM_EFAIL;
+	}
+
+	hcpu = vmm_smp_processor_id();
+	tlcp = &per_cpu(tlc, hcpu);
+	tstamp = vmm_timer_timestamp();
+
+	vmm_spin_lock_irqsave_lite(&ev->active_lock, flags);
+
+	__timer_event_stop(ev);
+
+	ev->expiry_tstamp = tstamp + duration_nsecs;
+	ev->duration_nsecs = duration_nsecs;
+	ev->active_state = TRUE;
+	ev->active_hcpu = hcpu;
+
+	vmm_write_lock_irqsave_lite(&tlcp->event_list_lock, flags1);
+
+	if(1) {
+		if (ev->expiry_tstamp < e->expiry_tstamp) {
+			found_pos = TRUE;
+			break;
+		}
+	}
+
+	if (!found_pos) {
+		list_add_tail(&ev->active_head, &tlcp->event_list);
+	} else {
+		list_add_tail(&ev->active_head, &e->active_head);
+	}
+
+	__timer_schedule_next_event(tlcp);
+
+	vmm_write_unlock_irqrestore_lite(&tlcp->event_list_lock, flags1);
+
+	vmm_spin_unlock_irqrestore_lite(&ev->active_lock, flags);
+
+	return VMM_OK;
+}
+
+int vmm_timer_event_restart(struct vmm_timer_event *ev)
+{
+	if (!ev) {
+		return VMM_EFAIL;
+	}
+
+	return vmm_timer_event_start(ev, ev->duration_nsecs);
+}
+
+int vmm_timer_event_stop(struct vmm_timer_event *ev)
+{
+	irq_flags_t flags;
+
+	if (!ev) {
+		return VMM_EFAIL;
+	}
+
+	vmm_spin_lock_irqsave_lite(&ev->active_lock, flags);
+
+	__timer_event_stop(ev);
+
+	vmm_spin_unlock_irqrestore_lite(&ev->active_lock, flags);
+
+	return VMM_OK;
+}
+
+bool vmm_timer_started(void)
+{
+	return this_cpu(tlc).started;
+}
+
+void vmm_timer_start(void)
+{
+	u64 tstamp;
+	struct vmm_timer_local_ctrl *tlcp = &this_cpu(tlc);
+
+	vmm_clockchip_set_mode(tlcp->cc, VMM_CLOCKCHIP_MODE_ONESHOT);
+
+	tstamp = vmm_timer_timestamp();
+
+	tlcp->next_event = tstamp + tlcp->cc->min_delta_ns;
+
+	tlcp->started = TRUE;
+
+	vmm_clockchip_program_event(tlcp->cc, tstamp, tlcp->next_event);
+}
+
+void vmm_timer_stop(void)
+{
+	struct vmm_timer_local_ctrl *tlcp = &this_cpu(tlc);
+
+	vmm_clockchip_set_mode(tlcp->cc, VMM_CLOCKCHIP_MODE_SHUTDOWN);
+
+	tlcp->started = FALSE;
+}
+
+int  vmm_timer_init(void)
+{
+	int rc;
+	u32 cpu = vmm_smp_processor_id();
+	struct vmm_clocksource *cs;
+	struct vmm_timer_local_ctrl *tlcp = &this_cpu(tlc);
+
+	
+	memset(tlcp, 0, sizeof(*tlcp));
+
+	
+	tlcp->started = FALSE;
+	tlcp->inprocess = FALSE;
+
+	
+	tlcp->curr = NULL;
+
+	
+	INIT_RW_LOCK(&tlcp->event_list_lock);
+	INIT_LIST_HEAD(&tlcp->event_list);
+
+	
+	tlcp->cc = vmm_clockchip_bind_best(cpu);
+	if (!tlcp->cc) {
+		vmm_printf("%s: No clockchip for CPU%d\n", __func__, cpu);
+		return VMM_ENODEV;
+	}
+
+	
+	vmm_clockchip_set_event_handler(tlcp->cc, 
+					&timer_clockchip_event_handler);
+
+	if (vmm_smp_is_bootcpu()) {
+		
+		if (!(cs = vmm_clocksource_best())) {
+			vmm_printf("%s: No clocksource found\n", __func__);
+			return VMM_ENODEV;
+		}
+
+		
+		if ((rc = vmm_timecounter_init(&tlcp->tc, cs, 0))) {
+			return rc;
+		}
+
+		
+		if ((rc = vmm_timecounter_start(&tlcp->tc))) {
+			return rc;
+		}
+	} else {
+		
+		if ((rc = vmm_timecounter_init(&tlcp->tc, 
+			per_cpu(tlc, 0).tc.cs, 
+			vmm_timecounter_read(&per_cpu(tlc, 0).tc)))) {
+			return rc;
+		}
+	}
+
+	return VMM_OK;
+}

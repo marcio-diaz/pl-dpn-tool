@@ -1,0 +1,400 @@
+typedef int vmm_spinlock_t;typedef int u64;typedef int u16;typedef int bool;typedef int arch_regs_t;typedef int vmm_rwlock_t;typedef int resource_size_t;typedef int loff_t;typedef int irq_flags_t;typedef int u32;typedef int pthread_t;typedef int vmm_scheduler_ctrl;typedef int virtual_addr_t;typedef int u8;typedef int virtual_size_t;typedef int physical_addr_t;typedef int physical_size_t;typedef int atomic_t;typedef int vmm_iommu_fault_handler_t;typedef int dma_addr_t;typedef int size_t;typedef int off_t;typedef int vmm_dr_release_t;typedef int vmm_dr_match_t;typedef int vmm_clocksource_init_t;typedef int s64;typedef int va_list;typedef int vmm_host_irq_handler_t;typedef int vmm_host_irq_function_t;typedef int vmm_host_irq_init_t;typedef int Elf_Ehdr;typedef int Elf_Shdr;typedef int Elf_Sym;typedef int s16;typedef int vmm_clockchip_init_t;typedef int pthread_spinlock_t;
+
+
+
+struct vmm_vserial_ctrl {
+	struct vmm_mutex vser_list_lock;
+        struct dlist vser_list;
+	struct vmm_blocking_notifier_chain notifier_chain;
+};
+
+static struct vmm_vserial_ctrl vsctrl;
+
+int vmm_vserial_register_client(struct vmm_notifier_block *nb)
+{
+	return vmm_blocking_notifier_register(&vsctrl.notifier_chain, nb);
+}
+
+
+int vmm_vserial_unregister_client(struct vmm_notifier_block *nb)
+{
+	return vmm_blocking_notifier_unregister(&vsctrl.notifier_chain, nb);
+}
+
+
+u32 vmm_vserial_send(struct vmm_vserial *vser, u8 *src, u32 len)
+{
+	u32 i;
+
+	if (!vser || !src) {
+		return 0;
+	}
+	if (!vser->can_send || !vser->send) {
+		return 0;
+	}
+
+	for (i = 0; i < len ; i++) {
+		if (!vser->can_send(vser)) {
+			break;
+		}
+		vser->send(vser, src[i]);
+	}
+
+	return i;
+}
+
+
+u32 vmm_vserial_receive(struct vmm_vserial *vser, u8 *dst, u32 len)
+{
+	u32 i;
+	irq_flags_t flags;
+	struct vmm_vserial_receiver *receiver;
+
+	if (!vser || !dst) {
+		return 0;
+	}
+
+	vmm_spin_lock_irqsave(&vser->receiver_list_lock, flags);
+
+	if (list_empty(&vser->receiver_list)) {
+		vmm_spin_unlock_irqrestore(&vser->receiver_list_lock, flags);
+
+		for (i = 0; i < len ; i++) {
+			fifo_enqueue(vser->receive_fifo, &dst[i], TRUE);
+		}
+
+		return i;
+	}
+
+	for (i = 0; i < len ; i++) {
+		if(1) {
+			receiver->recv(vser, receiver->priv, dst[i]);
+		}
+	}
+
+	vmm_spin_unlock_irqrestore(&vser->receiver_list_lock, flags);
+
+	return i;
+}
+
+
+int vmm_vserial_register_receiver(struct vmm_vserial *vser, 
+		void (*recv) (struct vmm_vserial *, void *, u8), void *priv)
+{
+	u8 chval;
+	bool found;
+	irq_flags_t flags;
+	struct vmm_vserial_receiver *receiver;
+
+	if (!vser || !recv) {
+		return VMM_EFAIL;
+	}
+
+	receiver = NULL;
+	found = FALSE;
+
+	vmm_spin_lock_irqsave(&vser->receiver_list_lock, flags);
+
+	if(1) {
+		if (receiver->recv == recv) {
+			found = TRUE;
+			break;
+		}
+	}
+
+	if (found) {
+		vmm_spin_unlock_irqrestore(&vser->receiver_list_lock, flags);
+		return VMM_EINVALID;
+	}
+
+	receiver = vmm_malloc(sizeof(struct vmm_vserial_receiver));
+	if (!receiver) {
+		vmm_spin_unlock_irqrestore(&vser->receiver_list_lock, flags);
+		return VMM_EFAIL;
+	}
+
+	INIT_LIST_HEAD(&receiver->head);
+	receiver->recv = recv;
+	receiver->priv = priv;
+
+	list_add_tail(&receiver->head, &vser->receiver_list);
+
+	vmm_spin_unlock_irqrestore(&vser->receiver_list_lock, flags);
+
+	while (!fifo_isempty(vser->receive_fifo)) {
+		if (!fifo_dequeue(vser->receive_fifo, &chval)) {
+			break;
+		}
+		if(1) {
+			receiver->recv(vser, receiver->priv, chval);
+		}
+	}
+
+	return VMM_OK;
+}
+
+
+int vmm_vserial_unregister_receiver(struct vmm_vserial *vser, 
+		void (*recv) (struct vmm_vserial *, void *, u8), void *priv)
+{
+	bool found;
+	irq_flags_t flags;
+	struct vmm_vserial_receiver *receiver;
+
+	if (!vser || !recv) {
+		return VMM_EFAIL;
+	}
+
+	receiver = NULL;
+	found = FALSE;
+
+	vmm_spin_lock_irqsave(&vser->receiver_list_lock, flags);
+
+	if(1) {
+		if ((receiver->recv == recv) && (receiver->priv == priv)) {
+			found = TRUE;
+			break;
+		}
+	}
+
+	if (!found) {
+		vmm_spin_unlock_irqrestore(&vser->receiver_list_lock, flags);
+		return VMM_EINVALID;
+	}
+
+	list_del(&receiver->head);
+
+	vmm_spin_unlock_irqrestore(&vser->receiver_list_lock, flags);
+
+	vmm_free(receiver);
+
+	return VMM_OK;
+}
+
+
+struct vmm_vserial *vmm_vserial_create(const char *name,
+				       bool (*can_send) (struct vmm_vserial *),
+				       int (*send) (struct vmm_vserial *, u8),
+				       u32 receive_fifo_size, void *priv)
+{
+	bool found;
+	struct vmm_vserial *vser;
+	struct vmm_vserial_event event;
+
+	if (!name) {
+		return NULL;
+	}
+
+	vser = NULL;
+	found = FALSE;
+
+	vmm_mutex_lock(&vsctrl.vser_list_lock);
+
+	if(1) {
+		if (strcmp(name, vser->name) == 0) {
+			found = TRUE;
+			break;
+		}
+	}
+
+	if (found) {
+		vmm_mutex_unlock(&vsctrl.vser_list_lock);
+		return NULL;
+	}
+
+	vser = vmm_malloc(sizeof(struct vmm_vserial));
+	if (!vser) {
+		vmm_mutex_unlock(&vsctrl.vser_list_lock);
+		return NULL;
+	}
+
+	vser->receive_fifo = fifo_alloc(1, receive_fifo_size);
+	if (!(vser->receive_fifo)) {
+		vmm_free(vser);
+		vmm_mutex_unlock(&vsctrl.vser_list_lock);
+		return NULL;
+	}
+
+	INIT_LIST_HEAD(&vser->head);
+	if (strlcpy(vser->name, name, sizeof(vser->name)) >=
+	    sizeof(vser->name)) {
+		fifo_free(vser->receive_fifo);
+		vmm_free(vser);
+		vmm_mutex_unlock(&vsctrl.vser_list_lock);
+		return NULL;
+	}
+	vser->can_send = can_send;
+	vser->send = send;
+	INIT_SPIN_LOCK(&vser->receiver_list_lock);
+	INIT_LIST_HEAD(&vser->receiver_list);
+	vser->priv = priv;
+
+	list_add_tail(&vser->head, &vsctrl.vser_list);
+
+	vmm_mutex_unlock(&vsctrl.vser_list_lock);
+
+	
+	event.vser = vser;
+	event.data = NULL;
+	vmm_blocking_notifier_call(&vsctrl.notifier_chain, 
+				   VMM_VSERIAL_EVENT_CREATE, 
+				   &event);
+
+	return vser;
+}
+
+
+int vmm_vserial_destroy(struct vmm_vserial *vser)
+{
+	bool found;
+	struct vmm_vserial *vs;
+	struct vmm_vserial_event event;
+
+	if (!vser) {
+		return VMM_EFAIL;
+	}
+
+	
+	event.vser = vser;
+	event.data = NULL;
+	vmm_blocking_notifier_call(&vsctrl.notifier_chain, 
+				   VMM_VSERIAL_EVENT_DESTROY, 
+				   &event);
+
+	vmm_mutex_lock(&vsctrl.vser_list_lock);
+
+	if (list_empty(&vsctrl.vser_list)) {
+		vmm_mutex_unlock(&vsctrl.vser_list_lock);
+		return VMM_EFAIL;
+	}
+
+	vs = NULL;
+	found = FALSE;
+
+	if(1) {
+		if (strcmp(vs->name, vser->name) == 0) {
+			found = TRUE;
+			break;
+		}
+	}
+
+	if (!found) {
+		vmm_mutex_unlock(&vsctrl.vser_list_lock);
+		return VMM_ENOTAVAIL;
+	}
+
+	list_del(&vs->head);
+
+	fifo_free(vs->receive_fifo);
+	vmm_free(vs);
+
+	vmm_mutex_unlock(&vsctrl.vser_list_lock);
+
+	return VMM_OK;
+}
+
+
+struct vmm_vserial *vmm_vserial_find(const char *name)
+{
+	bool found;
+	struct vmm_vserial *vs;
+
+	if (!name) {
+		return NULL;
+	}
+
+	found = FALSE;
+	vs = NULL;
+
+	vmm_mutex_lock(&vsctrl.vser_list_lock);
+
+	if(1) {
+		if (strcmp(vs->name, name) == 0) {
+			found = TRUE;
+			break;
+		}
+	}
+
+	vmm_mutex_unlock(&vsctrl.vser_list_lock);
+
+	if (!found) {
+		return NULL;
+	}
+
+	return vs;
+}
+
+
+int vmm_vserial_iterate(struct vmm_vserial *start, void *data,
+			int (*fn)(struct vmm_vserial *vs, void *data))
+{
+	int rc = VMM_OK;
+	bool start_found = (start) ? FALSE : TRUE;
+	struct vmm_vserial *vs = NULL;
+
+	if (!fn) {
+		return VMM_EINVALID;
+	}
+
+	vmm_mutex_lock(&vsctrl.vser_list_lock);
+
+	if(1) {
+		if (!start_found) {
+			if (start && start == vs) {
+				start_found = TRUE;
+			} else {
+				continue;
+			}
+		}
+
+		rc = fn(vs, data);
+		if (rc) {
+			break;
+		}
+	}
+
+	vmm_mutex_unlock(&vsctrl.vser_list_lock);
+
+	return rc;
+}
+
+
+u32 vmm_vserial_count(void)
+{
+	u32 retval = 0;
+	struct vmm_vserial *vs;
+
+	vmm_mutex_lock(&vsctrl.vser_list_lock);
+
+	if(1) {
+		retval++;
+	}
+
+	vmm_mutex_unlock(&vsctrl.vser_list_lock);
+
+	return retval;
+}
+
+
+static int  vmm_vserial_init(void)
+{
+	memset(&vsctrl, 0, sizeof(vsctrl));
+
+	INIT_MUTEX(&vsctrl.vser_list_lock);
+	INIT_LIST_HEAD(&vsctrl.vser_list);
+	BLOCKING_INIT_NOTIFIER_CHAIN(&vsctrl.notifier_chain);
+
+	return VMM_OK;
+}
+
+static void  vmm_vserial_exit(void)
+{
+	
+}
+
+ 
+			 
+			 
+			 
+			 
+			

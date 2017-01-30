@@ -1,0 +1,149 @@
+typedef int vmm_spinlock_t;typedef int u64;typedef int u16;typedef int bool;typedef int arch_regs_t;typedef int vmm_rwlock_t;typedef int resource_size_t;typedef int loff_t;typedef int irq_flags_t;typedef int u32;typedef int pthread_t;typedef int vmm_scheduler_ctrl;typedef int virtual_addr_t;typedef int u8;typedef int virtual_size_t;typedef int physical_addr_t;typedef int physical_size_t;typedef int atomic_t;typedef int vmm_iommu_fault_handler_t;typedef int dma_addr_t;typedef int size_t;typedef int off_t;typedef int vmm_dr_release_t;typedef int vmm_dr_match_t;typedef int vmm_clocksource_init_t;typedef int s64;typedef int va_list;typedef int vmm_host_irq_handler_t;typedef int vmm_host_irq_function_t;typedef int vmm_host_irq_init_t;typedef int Elf_Ehdr;typedef int Elf_Shdr;typedef int Elf_Sym;typedef int s16;typedef int vmm_clockchip_init_t;typedef int pthread_spinlock_t;
+
+
+extern const struct vmm_setup_param __setup_start[], __setup_end[];
+
+static char dash2underscore(char c)
+{
+        if (c == '-')
+                return '_';
+        return c;
+}
+
+static bool parameqn(const char *a, const char *b, size_t n)
+{
+        size_t i;
+
+        for (i = 0; i < n; i++) {
+                if (dash2underscore(a[i]) != dash2underscore(b[i]))
+                        return false;
+	}
+        return true;
+}
+
+static bool parameq(const char *a, const char *b)
+{
+        return parameqn(a, b, strlen(a)+1);
+}
+
+
+static int  do_early_param(char *param, char *val, const char *unused)
+{
+	const struct vmm_setup_param *p;
+
+        for (p = __setup_start; p < __setup_end; p++) {
+                if ((p->early && parameq(param, p->str)) ||
+			(strcmp(param, "console") == 0 &&
+				strcmp(p->str, "earlycon") == 0)
+			) {
+                        p->setup_func(val);
+                }
+        }
+        
+        return 0;
+}
+
+
+
+static char *next_arg(char *args, char **param, char **val)
+{
+	unsigned int i, equals = 0;
+	int in_quote = 0, quoted = 0;
+	char *next;
+
+	if (*args == '"') {
+		args++;
+		in_quote = 1;
+		quoted = 1;
+	}
+
+	for (i = 0; args[i]; i++) {
+		if (isspace(args[i]) && !in_quote)
+			break;
+		if (equals == 0) {
+			if (args[i] == '=')
+				equals = i;
+		}
+		if (args[i] == '"')
+			in_quote = !in_quote;
+	}
+
+	*param = args;
+	if (!equals)
+		*val = NULL;
+	else {
+		args[equals] = '\0';
+		*val = args + equals + 1;
+
+		
+		if (**val == '"') {
+			(*val)++;
+			if (args[i-1] == '"')
+				args[i-1] = '\0';
+		}
+		if (quoted && args[i-1] == '"')
+			args[i-1] = '\0';
+	}
+
+	if (args[i]) {
+		args[i] = '\0';
+		next = args + i + 1;
+	} else
+		next = args + i;
+
+	
+	return skip_spaces(next);
+}
+
+
+static int parse_args(const char *doing,
+		     char *args,
+		     unsigned num,
+		     s16 min_level,
+		     s16 max_level,
+		     int (*unknown)(char *param, char *val, const char *doing))
+{
+	char *param, *val;
+
+	
+	args = skip_spaces(args);
+
+	while (*args) {
+		int ret;
+
+		args = next_arg(args, &param, &val);
+		if (unknown) {
+			ret = unknown(param, val, doing);
+
+			if (ret)
+				return ret;
+		}
+	}
+
+	
+	return 0;
+}
+
+int vmm_get_option(char **str, int *pint)
+{
+        char *cur = *str;
+
+        if (!cur || !(*cur))
+                return 0;
+        *pint = strtol(cur, str, 0);
+        if (cur == *str)
+                return 0;
+        if (**str == ',') {
+                (*str)++;
+                return 2;
+        }
+        if (**str == '-')
+                return 3;
+
+        return 1;
+}
+
+void  vmm_parse_early_options(const char *cmdline)
+{
+        parse_args("early options", (char *)cmdline, 0, 0, 0, do_early_param);
+}

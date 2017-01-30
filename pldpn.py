@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import pygraphviz as pgv
 import sys
 import copy
 import time
@@ -12,9 +11,20 @@ from itertools import chain, combinations
 from preprocessing.file import process_file
 
 
-lock_proc = "pthread_spin_lock"
-unlock_proc = "pthread_spin_unlock"
-thread_create_proc = "create_thread"
+LOCK_NAME = 'pthread_spin_lock'
+UNLOCK_NAME = 'pthread_spin_unlock'
+THREAD_NAME = 'create_thread'
+
+THREAD_CONFIG = {}
+THREAD_CONFIG_FILE = 'thread_config.txt'
+
+def populate_config():
+        
+    with open(THREAD_CONFIG_FILE, 'r') as f:
+        for line in f:
+            create_name, procedure, priority = line.split()
+            THREAD_CONFIG[create_name] = (int(procedure),
+                                          int(priority))
 
 def powerset(iterable):
     s = list(iterable)
@@ -431,7 +441,7 @@ def run_race_detection(pldpn, global_vars):
                                        False, False)
     mautomaton_2 = get_full_mautomaton(pldpn, mautomaton_1.end.name+1,
                                        False, True)
-    combinations = [ (a1, s1, a2, s2, p1, p2, l1, l2)
+    combinations = [ (var, a1, s1, a2, s2, p1, p2, l1, l2)
                      for var in global_vars
                      for a1, s1 in variable_stack_d[var]
                      for a2, s2 in variable_stack_d[var]
@@ -445,7 +455,7 @@ def run_race_detection(pldpn, global_vars):
     start = time.time()
     result = False # No data race.
     print("Searching for errors.")
-    for a1, s1, a2, s2, priority_1, priority_2, locks_1, locks_2 in combinations:
+    for var, a1, s1, a2, s2, priority_1, priority_2, locks_1, locks_2 in combinations:
         sys.stdout.write("\t" + str((i*100)//tot) + "%")
         sys.stdout.flush()
         i += 1
@@ -499,14 +509,16 @@ def run_race_detection(pldpn, global_vars):
         if check_initial(mautomaton):
 #            sys.stdout.write(". " + str(int(time.time()-start)) + " sec.")
             print(bcolors.FAIL + " DATA RACE FOUND." + bcolors.ENDC)
-            print(a1, s1, a2, s2, locks_1, locks_2)
+            print("The procedures {} and {} race on variable {} at control points {} and {}, respectively."
+                  .format(s1.procedure_name, s2.procedure_name, var, s1.control_point, s2.control_point))
             result = True
             break
         else:
 #            sys.stdout.write(". " + str(int(time.time()-start)) + " sec.")
             sys.stdout.write(bcolors.OKGREEN + " SAFE." + bcolors.ENDC + "\r")
             sys.stdout.flush()            
-            
+    if not result:
+        print("No data race found. Everything looks fine.")
     return result
 
 def run_deadlock_detection(pldpn):

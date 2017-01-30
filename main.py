@@ -1,9 +1,8 @@
 #!/usr/bin/python3
-
+import pldpn
 from pldpn import *
 import argparse
 import glob
-
 
 
 def print_stats(state):
@@ -27,15 +26,23 @@ def print_stats(state):
                                                 ReturnAction)]))
         print("Global vars: ", state.global_vars)
 
+
+        
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", dest="filename")
     parser.add_argument("-d", dest="directory")
+    parser.add_argument("-t", dest="thread_name")
     parser.add_argument("-s", "--stats",
                         help="Print statistics of the program.",
                         action="store_true")        
     args = parser.parse_args()
+
+    populate_config()
+    
+    if args.thread_name:
+        pldpn.THREAD_NAME = args.thread_name
     
     if args.filename:
         state = State()
@@ -47,7 +54,7 @@ if __name__ == "__main__":
         if args.stats:
                 print_stats(state)
         run_race_detection(pldpn, state.global_vars)
-        
+
     if args.directory:
         c_files = [file for file in glob.glob(args.directory
                                 + '/**/*.c', recursive=True)]
@@ -55,7 +62,7 @@ if __name__ == "__main__":
         for i, filename in enumerate(c_files):
             sys.stdout.write("Parsing {} of {}: {}"
                              .format(i+1, len(c_files), filename)
-                             + "\r")
+                             + " " * 50 +"\r")
             sys.stdout.flush()
             process_file(filename, state)
         print("Parsing of files completed." + " " * 50)

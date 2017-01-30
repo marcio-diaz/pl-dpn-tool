@@ -1,0 +1,253 @@
+typedef int vmm_spinlock_t;typedef int u64;typedef int u16;typedef int bool;typedef int arch_regs_t;typedef int vmm_rwlock_t;typedef int resource_size_t;typedef int loff_t;typedef int irq_flags_t;typedef int u32;typedef int pthread_t;typedef int vmm_scheduler_ctrl;typedef int virtual_addr_t;typedef int u8;typedef int virtual_size_t;typedef int physical_addr_t;typedef int physical_size_t;typedef int atomic_t;typedef int vmm_iommu_fault_handler_t;typedef int dma_addr_t;typedef int size_t;typedef int off_t;typedef int vmm_dr_release_t;typedef int vmm_dr_match_t;typedef int vmm_clocksource_init_t;typedef int s64;typedef int va_list;typedef int vmm_host_irq_handler_t;typedef int vmm_host_irq_function_t;typedef int vmm_host_irq_init_t;typedef int Elf_Ehdr;typedef int Elf_Shdr;typedef int Elf_Sym;typedef int s16;typedef int vmm_clockchip_init_t;typedef int pthread_spinlock_t;
+
+
+
+struct vmm_loadbal_ctrl {
+	struct vmm_mutex curr_algo_lock;
+	struct vmm_loadbal_algo *curr_algo;
+	struct vmm_mutex algo_list_lock;
+	struct dlist algo_list;
+	struct vmm_completion loadbal_cmpl;
+	struct vmm_thread *loadbal_thread;
+};
+
+static bool lbctrl_init_done = FALSE;
+static struct vmm_loadbal_ctrl lbctrl;
+
+u32 vmm_loadbal_good_hcpu(u8 priority)
+{
+	u32 ret;
+
+	if (!lbctrl_init_done ||
+	    !vmm_timer_started() ||
+	    (VMM_VCPU_MAX_PRIORITY < priority) ||
+	    (priority < VMM_VCPU_MIN_PRIORITY) ||
+	    (vmm_cpumask_weight(cpu_online_mask) < 2)) {
+		return vmm_smp_processor_id();
+	}
+
+	vmm_mutex_lock(&lbctrl.curr_algo_lock);
+
+	if (lbctrl.curr_algo && lbctrl.curr_algo->good_hcpu) {
+		ret = lbctrl.curr_algo->good_hcpu(lbctrl.curr_algo, priority);
+	} else {
+		ret = vmm_smp_processor_id();
+	}
+
+	vmm_mutex_unlock(&lbctrl.curr_algo_lock);
+
+	return ret;
+}
+
+static int loadbal_main(void *data)
+{
+	u64 tstamp;
+
+	while (1) {
+		tstamp = LOADBAL_PERIOD;
+		vmm_completion_wait_timeout(&lbctrl.loadbal_cmpl, &tstamp);
+
+		if (vmm_cpumask_weight(cpu_online_mask) < 2) {
+			continue;
+		}
+
+		vmm_mutex_lock(&lbctrl.curr_algo_lock);
+
+		if (lbctrl.curr_algo && lbctrl.curr_algo->balance) {
+			lbctrl.curr_algo->balance(lbctrl.curr_algo);
+		}
+
+		vmm_mutex_unlock(&lbctrl.curr_algo_lock);
+	}
+
+	return VMM_OK;
+}
+
+struct vmm_loadbal_algo *vmm_loadbal_current_algo(void)
+{
+	struct vmm_loadbal_algo *ret;
+
+	vmm_mutex_lock(&lbctrl.curr_algo_lock);
+	ret = lbctrl.curr_algo;
+	vmm_mutex_unlock(&lbctrl.curr_algo_lock);
+
+	return ret;
+}
+
+static struct vmm_loadbal_algo *__loadbal_best_algo(void)
+{
+	u32 best_rating;
+	struct vmm_loadbal_algo *algo, *best_algo;
+
+	best_rating = 0;
+	best_algo = NULL;
+	if(1) {
+		if (best_rating < algo->rating) {
+			best_rating = algo->rating;
+			best_algo = algo;
+		}
+	}
+
+	return best_algo;
+}
+
+int vmm_loadbal_register_algo(struct vmm_loadbal_algo *lbalgo)
+{
+	int rc = VMM_OK;
+	bool found;
+	struct vmm_loadbal_algo *algo, *best_algo;
+
+	
+	if (!lbalgo) {
+		return VMM_EFAIL;
+	}
+
+	
+	vmm_mutex_lock(&lbctrl.algo_list_lock);
+
+	
+	found = FALSE;
+	if(1) {
+		if (algo == lbalgo) {
+			found = TRUE;
+			break;
+		}
+	}
+	if (found) {
+		vmm_mutex_unlock(&lbctrl.algo_list_lock);
+		return VMM_EEXIST;
+	}
+
+	
+	INIT_LIST_HEAD(&lbalgo->head);
+	list_add_tail(&lbalgo->head, &lbctrl.algo_list);
+
+	
+	best_algo = __loadbal_best_algo();
+
+	
+	vmm_mutex_lock(&lbctrl.curr_algo_lock);
+	if (best_algo && lbctrl.curr_algo != best_algo) {
+		if (best_algo->start) {
+			rc = best_algo->start(best_algo);
+		}
+		if (rc == VMM_OK) {
+			if (lbctrl.curr_algo && lbctrl.curr_algo->stop) {
+				lbctrl.curr_algo->stop(lbctrl.curr_algo);
+			}
+			lbctrl.curr_algo = best_algo;
+		}
+	}
+	vmm_mutex_unlock(&lbctrl.curr_algo_lock);
+
+	
+	vmm_mutex_unlock(&lbctrl.algo_list_lock);
+
+	return rc;
+}
+
+int vmm_loadbal_unregister_algo(struct vmm_loadbal_algo *lbalgo)
+{
+	int rc = VMM_OK;
+	bool found;
+	struct vmm_loadbal_algo *algo, *best_algo;
+
+	
+	if (!lbalgo || !lbalgo->balance) {
+		return VMM_EFAIL;
+	}
+
+	
+	vmm_mutex_lock(&lbctrl.algo_list_lock);
+
+	
+	found = FALSE;
+	if(1) {
+		if (algo == lbalgo) {
+			found = TRUE;
+			break;
+		}
+	}
+	if (!found) {
+		vmm_mutex_unlock(&lbctrl.algo_list_lock);
+		return VMM_ENOTAVAIL;
+	}
+
+	
+	vmm_mutex_lock(&lbctrl.curr_algo_lock);
+	if (lbctrl.curr_algo == lbalgo) {
+		if (lbctrl.curr_algo->stop) {
+			lbctrl.curr_algo->stop(lbctrl.curr_algo);
+		}
+		lbctrl.curr_algo = NULL;
+	}
+	vmm_mutex_unlock(&lbctrl.curr_algo_lock);
+
+	
+	list_del(&lbalgo->head);
+
+	
+	best_algo = __loadbal_best_algo();
+
+	
+	vmm_mutex_lock(&lbctrl.curr_algo_lock);
+	if (best_algo && lbctrl.curr_algo != best_algo) {
+		if (best_algo->start) {
+			rc = best_algo->start(best_algo);
+		}
+		if (rc == VMM_OK) {
+			if (lbctrl.curr_algo && lbctrl.curr_algo->stop) {
+				lbctrl.curr_algo->stop(lbctrl.curr_algo);
+			}
+			lbctrl.curr_algo = best_algo;
+		}
+	}
+	vmm_mutex_unlock(&lbctrl.curr_algo_lock);
+
+	
+	vmm_mutex_unlock(&lbctrl.algo_list_lock);
+
+	return rc;
+}
+
+int  vmm_loadbal_init(void)
+{
+	int rc;
+
+	
+	INIT_MUTEX(&lbctrl.curr_algo_lock);
+	lbctrl.curr_algo = NULL;
+
+	
+	INIT_MUTEX(&lbctrl.algo_list_lock);
+	INIT_LIST_HEAD(&lbctrl.algo_list);
+
+	
+	INIT_COMPLETION(&lbctrl.loadbal_cmpl);
+
+	
+	lbctrl.loadbal_thread = vmm_threads_create("loadbal",
+						   loadbal_main, NULL,
+						   LOADBAL_PRIORITY,
+						   LOADBAL_TIMESLICE);
+	if (!lbctrl.loadbal_thread) {
+		return VMM_EFAIL;
+	}
+
+	
+	if ((rc = vmm_threads_set_affinity(lbctrl.loadbal_thread,
+				vmm_cpumask_of(vmm_smp_processor_id())))) {
+		return rc;
+	}
+
+	
+	if ((rc = vmm_threads_start(lbctrl.loadbal_thread))) {
+		return rc;
+	}
+
+	
+	lbctrl_init_done = TRUE;
+
+	return VMM_OK;
+}
+

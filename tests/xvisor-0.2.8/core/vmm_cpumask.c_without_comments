@@ -1,0 +1,86 @@
+
+
+#include <vmm_cpumask.h>
+
+
+int vmm_cpu_count = CONFIG_CPU_COUNT;
+
+
+
+
+#define MASK_DECLARE_1(x)	[x+1][0] = (1UL << (x))
+#define MASK_DECLARE_2(x)	MASK_DECLARE_1(x), MASK_DECLARE_1(x+1)
+#define MASK_DECLARE_4(x)	MASK_DECLARE_2(x), MASK_DECLARE_2(x+2)
+#define MASK_DECLARE_8(x)	MASK_DECLARE_4(x), MASK_DECLARE_4(x+4)
+
+const unsigned long cpu_bit_bitmap[BITS_PER_LONG+1][BITS_TO_LONGS(CONFIG_CPU_COUNT)] = {
+
+	MASK_DECLARE_8(0),	MASK_DECLARE_8(8),
+	MASK_DECLARE_8(16),	MASK_DECLARE_8(24),
+#if BITS_PER_LONG > 32
+	MASK_DECLARE_8(32),	MASK_DECLARE_8(40),
+	MASK_DECLARE_8(48),	MASK_DECLARE_8(56),
+#endif
+};
+
+const DECLARE_BITMAP(cpu_all_bits, CONFIG_CPU_COUNT) = VMM_CPU_BITS_ALL;
+
+static DECLARE_BITMAP(cpu_possible_bits, CONFIG_CPU_COUNT) __read_mostly;
+const struct vmm_cpumask *const cpu_possible_mask = to_cpumask(cpu_possible_bits);
+
+static DECLARE_BITMAP(cpu_online_bits, CONFIG_CPU_COUNT) __read_mostly;
+const struct vmm_cpumask *const cpu_online_mask = to_cpumask(cpu_online_bits);
+
+static DECLARE_BITMAP(cpu_present_bits, CONFIG_CPU_COUNT) __read_mostly;
+const struct vmm_cpumask *const cpu_present_mask = to_cpumask(cpu_present_bits);
+
+static DECLARE_BITMAP(cpu_active_bits, CONFIG_CPU_COUNT) __read_mostly;
+const struct vmm_cpumask *const cpu_active_mask = to_cpumask(cpu_active_bits);
+
+void vmm_set_cpu_possible(unsigned int cpu, bool possible)
+{
+	if (possible)
+		vmm_cpumask_set_cpu(cpu, to_cpumask(cpu_possible_bits));
+	else
+		vmm_cpumask_clear_cpu(cpu, to_cpumask(cpu_possible_bits));
+}
+
+void vmm_set_cpu_present(unsigned int cpu, bool present)
+{
+	if (present)
+		vmm_cpumask_set_cpu(cpu, to_cpumask(cpu_present_bits));
+	else
+		vmm_cpumask_clear_cpu(cpu, to_cpumask(cpu_present_bits));
+}
+
+void vmm_set_cpu_online(unsigned int cpu, bool online)
+{
+	if (online)
+		vmm_cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
+	else
+		vmm_cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
+}
+
+void vmm_set_cpu_active(unsigned int cpu, bool active)
+{
+	if (active)
+		vmm_cpumask_set_cpu(cpu, to_cpumask(cpu_active_bits));
+	else
+		vmm_cpumask_clear_cpu(cpu, to_cpumask(cpu_active_bits));
+}
+
+void vmm_init_cpu_present(const struct vmm_cpumask *src)
+{
+	vmm_cpumask_copy(to_cpumask(cpu_present_bits), src);
+}
+
+void vmm_init_cpu_possible(const struct vmm_cpumask *src)
+{
+	vmm_cpumask_copy(to_cpumask(cpu_possible_bits), src);
+}
+
+void vmm_init_cpu_online(const struct vmm_cpumask *src)
+{
+	vmm_cpumask_copy(to_cpumask(cpu_online_bits), src);
+}
+
