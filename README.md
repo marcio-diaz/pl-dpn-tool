@@ -40,6 +40,7 @@ For running the tests you can do:
 ![Architecture of the tool](architecture.png)
 
 The tool executes forth steps in order to analize the program:
+
 1. Parsing of C code.
 
    This step returns an AST (Abstract Syntax Tree) of the program.
