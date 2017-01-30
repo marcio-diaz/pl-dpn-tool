@@ -1,3 +1,0 @@
-section, .text
-	write32, 0x10014, 0xeafffffe
-
