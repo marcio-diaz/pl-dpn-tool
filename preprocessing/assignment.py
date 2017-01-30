@@ -1,9 +1,13 @@
 import pldpn
 from pycparser import c_ast
 from utilities import get_vars
+from .function_calls import process_function_call
 
 def process_assignment(e, procedure_name, state, control_point):
     lvs = get_vars(e.lvalue)
+    if isinstance(e.rvalue, c_ast.FuncCall):
+        control_point = process_function_call(e.rvalue, procedure_name, state,
+                                              control_point)
     rvs = get_vars(e.rvalue)
     glva = lvs & state.global_vars
     grva = rvs & state.global_vars

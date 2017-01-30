@@ -29,7 +29,24 @@ if __name__ == "__main__":
         process_file(args.filename, state)
         pldpn = PLDPN(control_states=state.control_states, gamma=state.gamma,
                       rules=state.rules, spawn_end_gamma=state.spawn_end_gamma)
+        print("Parsing of files completed." + " " * 50)
+        print("Rules length: ", len(state.rules))
+        print("Spawn Rules length: ", len([r for r in state.rules
+                                           if isinstance(r.label, SpawnAction)]))
+        print("Lock Rules length: ", len([r for r in state.rules
+                                          if isinstance(r.label, LockAction)]))
+        print("Global Rules length: ", len([r for r in state.rules
+                                          if isinstance(r.label, GlobalAction)]))
+        print("Push Rules length: ", len([r for r in state.rules
+                                          if isinstance(r.label, PushAction)]))
+        
+        print("Return Rules length: ", len([r for r in state.rules
+                                            if isinstance(r.label, ReturnAction)]))
+        
+        print("Global vars: ", state.global_vars)
+        
         run_race_detection(pldpn, state.global_vars)
+        
     if args.directory:
         c_files = glob.glob(args.directory + "*.c")
         state = State()
@@ -39,6 +56,20 @@ if __name__ == "__main__":
             sys.stdout.flush()
             process_file(filename, state)
         print("Parsing of files completed." + " " * 50)
+        print("Rules length: ", len(state.rules))
+        print("Spawn Rules length: ", len([r for r in state.rules
+                                           if isinstance(r.label, SpawnAction)]))
+        print("Lock Rules length: ", len([r for r in state.rules
+                                          if isinstance(r.label, LockAction)]))
+        print("Global Rules length: ", len([r for r in state.rules
+                                          if isinstance(r.label, GlobalAction)]))
+        print("Push Rules length: ", len([r for r in state.rules
+                                          if isinstance(r.label, PushAction)]))
+        
+        print("Return Rules length: ", len([r for r in state.rules
+                                            if isinstance(r.label, ReturnAction)]))
+        
+        print("Global vars: ", state.global_vars)
         pldpn = PLDPN(control_states=state.control_states, gamma=state.gamma,
                       rules=state.rules, spawn_end_gamma=state.spawn_end_gamma)
         run_race_detection(pldpn, state.global_vars)

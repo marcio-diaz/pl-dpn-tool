@@ -16,7 +16,7 @@ from preprocessing.procedure import process_procedure
 
 lock_proc = "pthread_spin_lock"
 unlock_proc = "pthread_spin_unlock"
-thread_create_proc = "create_thread"
+thread_create_proc = "vmm_threads_create"
 
 def powerset(iterable):
     s = list(iterable)
@@ -443,7 +443,7 @@ def run_race_detection(pldpn, global_vars):
     tot = len(combinations)
     i = 0
     start = time.time()
-    print("combinations ", tot)
+    print("Combinations ", tot)
     print("Searching for errors.")
     for a1, s1, a2, s2, priority_1, priority_2, locks_1, locks_2 in combinations:
         sys.stdout.write("\t" + str((i*100)//tot) + "%")
@@ -503,8 +503,8 @@ def run_race_detection(pldpn, global_vars):
             break
         else:
 #            sys.stdout.write(". " + str(int(time.time()-start)) + " sec.")
-            print(bcolors.OKGREEN + " SAFE." + bcolors.ENDC)
-#            sys.stdout.flush()            
+            sys.stdout.write(bcolors.OKGREEN + " SAFE." + bcolors.ENDC + "\r")
+            sys.stdout.flush()            
             
 
 def run_deadlock_detection(pldpn):
