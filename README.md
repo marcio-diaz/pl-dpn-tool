@@ -34,3 +34,7 @@ Or
 For running the tests you can do:
 
 > python3 -m unittest tests/tests.py
+
+### Architecture
+
+![Architecture of the tool](architecture.png)
