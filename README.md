@@ -37,6 +37,7 @@ For running the tests you can do:
 
 ### Architecture
 <img src="architecture.png" width="650">
+
 The tool executes forth steps in order to analize the program:
 
 1. Parsing of C code.
