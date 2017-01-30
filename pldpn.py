@@ -444,7 +444,6 @@ def run_race_detection(pldpn, global_vars):
     i = 0
     start = time.time()
     result = False # No data race.
-    print("Combinations ", tot)
     print("Searching for errors.")
     for a1, s1, a2, s2, priority_1, priority_2, locks_1, locks_2 in combinations:
         sys.stdout.write("\t" + str((i*100)//tot) + "%")

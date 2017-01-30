@@ -8,7 +8,6 @@ import glob
 
 def print_stats(state):
         
-        print("Parsing of files completed." + " " * 50)
         print("# Rules: ", len(state.rules))
         print("# Spawn rules: ", len([r for r in state.rules
                                            if isinstance(r.label,
@@ -32,7 +31,10 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", dest="filename")
-    parser.add_argument("-d", dest="directory")    
+    parser.add_argument("-d", dest="directory")
+    parser.add_argument("-s", "--stats",
+                        help="Print statistics of the program.",
+                        action="store_true")        
     args = parser.parse_args()
     
     if args.filename:
@@ -42,8 +44,8 @@ if __name__ == "__main__":
                       gamma=state.gamma,
                       rules=state.rules,
                       spawn_end_gamma=state.spawn_end_gamma)
-        
-        print_stats(state)
+        if args.stats:
+                print_stats(state)
         run_race_detection(pldpn, state.global_vars)
         
     if args.directory:
@@ -56,7 +58,9 @@ if __name__ == "__main__":
                              + "\r")
             sys.stdout.flush()
             process_file(filename, state)
-        print_stats(state)
+        print("Parsing of files completed." + " " * 50)
+        if args.stats:
+                print_stats(state)
         pldpn = PLDPN(control_states=state.control_states,
                       gamma=state.gamma,
                       rules=state.rules,
