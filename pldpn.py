@@ -9,7 +9,6 @@ import pickle
 from collections import namedtuple, defaultdict
 from pycparser import c_parser, c_ast, c_generator, parse_file
 from itertools import chain, combinations
-from mautomata import *
 from clean import clean_file
 from preprocessing.procedure import process_procedure
 

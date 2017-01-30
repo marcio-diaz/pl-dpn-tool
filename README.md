@@ -23,8 +23,8 @@ Then using *pip3* we install **pycparser**:
 
 We can run the tool either over a C file or over a complete directory:
 
-> main.py -f file.c
+> ./main.py -f file.c
 
 Or
 
-> main.py -d /xvisor/core/
+> ./main.py -d /xvisor/core/
