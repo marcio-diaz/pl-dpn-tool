@@ -7,7 +7,7 @@ def remove_comments(filename):
         data = re.sub(re.compile("/\*.*?\*/", re.DOTALL) , "", data)
         # remove all occurance singleline comments (//COMMENT\n ) from string        
         data = re.sub(re.compile("//.*?\n" ) ,"" ,data)
-        data = re.sub(re.compile("\\\\\n" ) ,"" ,data)         
+        data = re.sub(re.compile("\\\\\n" ) ,"" ,data)
     with open(filename + "_without_comments", 'w') as f:
         f.write(data)
 
@@ -49,9 +49,12 @@ def clean_file(filename):
                     'struct vmm_region,', 'struct vmm_timer_event,',
                     'struct vmm_device,', 'struct vmm_work,', 'struct vmm_module,',
                     'struct vmm_vcpu_resource,', 'struct vmm_vcpu,',
-                    'struct vmm_guest_request,', 'struct host_mhash_entry,',
-    		    'struct vmm_devtree_attr,', 'struct vmm_devtree_node,']
+                    'struct vmm_guest_request,', 'struct host_mhash_entry,', 'struct vmm_surface,',
+    		    'struct vmm_devtree_attr,', 'struct vmm_devtree_node,', 'struct vmm_vkeyboard_led_handler,',
+                    'struct vmm_netport_xfer,', 'struct vmm_schedalgo_rq_entry,', 'struct blockpart_work,',
+                    'struct vmm_blockdev,', 'struct blockrq_nop_work,']
     replace_words = {'for_each_present_cpu':'while',
+                     'for_each_online_cpu':'while',
                      'for_each_cpu\(.*\)':'while(1)',
                      'rbtree_postorder_for_each_entry_safe\(.*\)':'while(1)',
                      'vmm_devtree_for_each_child\(.*\)':'while(1)',
@@ -65,7 +68,12 @@ def clean_file(filename):
                      'list_for_each_entry_safe_reverse\(':'while(',
                      'list_for_each_entry_safe\(':'while(',
                      'vmm_devtree_for_each_attr\(.*\)':'while(1)',
-                     'list_for_each_entry_reverse\(':'while('}
+                     'list_for_each_entry_reverse\(':'while(',
+                     'list_for_each_safe\(':'while(',
+                     'ether_srcmac\(.*\)':'ether_srcmac()',
+	             'ether_dstmac\(.*\)':'ether_dstmac()',
+                     'memcpy\(.*\)':'memcpy()',
+                     'DECLARE_KEYMAP_FILE\(.*\);':''}
     
     delete_suffix_start_with = ['/*']
     

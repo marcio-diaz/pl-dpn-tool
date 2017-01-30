@@ -5,39 +5,27 @@ import argparse
 import glob
 
 
-def process_file(filename, state):
-    clean_file(filename)
-    ast = parse_file(filename + '_clean')
-    procedures = {}
-    for e in ast.ext:
-        if isinstance(e, c_ast.Decl):
-            state.global_vars.add(e.name)
-        if isinstance(e, c_ast.FuncDef):
-            procedures[e.decl.name] = e.body
-    for procedure_name, procedure_ast in procedures.items():
-        # control_point = 0
-        process_procedure(procedure_ast, procedure_name, state, 0)
-
 
 def print_stats(state):
+        
         print("Parsing of files completed." + " " * 50)
-        print("Rules length: ", len(state.rules))
-        print("Spawn Rules length: ", len([r for r in state.rules
+        print("# Rules: ", len(state.rules))
+        print("# Spawn rules: ", len([r for r in state.rules
                                            if isinstance(r.label,
                                                          SpawnAction)]))
-        print("Lock Rules length: ", len([r for r in state.rules
+        print("# Lock rules: ", len([r for r in state.rules
                                           if isinstance(r.label,
                                                         LockAction)]))
-        print("Global Rules length: ", len([r for r in state.rules
+        print("# Global rules: ", len([r for r in state.rules
                                           if isinstance(r.label,
                                                         GlobalAction)]))
-        print("Push Rules length: ", len([r for r in state.rules
+        print("# Push rules: ", len([r for r in state.rules
                                           if isinstance(r.label,
                                                         PushAction)]))
         
-        print("Return Rules length: ", len([r for r in state.rules
+        print("# Return rules: ", len([r for r in state.rules
                                             if isinstance(r.label,
-                                                    ReturnAction)]))
+                                                ReturnAction)]))
         print("Global vars: ", state.global_vars)
 
 if __name__ == "__main__":
@@ -59,7 +47,8 @@ if __name__ == "__main__":
         run_race_detection(pldpn, state.global_vars)
         
     if args.directory:
-        c_files = glob.glob(args.directory + "*.c")
+        c_files = [file for file in glob.glob(args.directory
+                                + '/**/*.c', recursive=True)]
         state = State()
         for i, filename in enumerate(c_files):
             sys.stdout.write("Parsing {} of {}: {}"
