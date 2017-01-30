@@ -23,11 +23,11 @@ Then using *pip3* we install **pycparser**:
 
 For running the tool either over a C file or over a complete directory:
 
-> ./main.py -f file.c
+> ./main.py -f tests/small_race.c
 
 Or
 
-> ./main.py -d /xvisor/core/
+> ./main.py -d ./xvisor/core/
 
 ### Tests
 
