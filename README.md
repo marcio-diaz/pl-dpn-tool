@@ -21,10 +21,16 @@ Then using *pip3* we install **pycparser**:
 
 ### Running
 
-We can run the tool either over a C file or over a complete directory:
+For running the tool either over a C file or over a complete directory:
 
 > ./main.py -f file.c
 
 Or
 
 > ./main.py -d /xvisor/core/
+
+### Tests
+
+For running the tests you can do:
+
+> python3 -m unittest tests/tests.py
