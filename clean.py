@@ -24,7 +24,7 @@ def clean_file(filename):
                  'vmm_dr_match_t', 'vmm_clocksource_init_t', 's64', 'va_list',
                  'vmm_host_irq_handler_t', 'vmm_host_irq_function_t',
                  'vmm_host_irq_init_t', 'Elf_Ehdr', 'Elf_Shdr', 'Elf_Sym', 's16',
-                 'vmm_clockchip_init_t']
+                 'vmm_clockchip_init_t', 'pthread_spinlock_t']
     new_file_lines = ['typedef int {};'.format(t) for t in to_define]
     skip_lines_start_with_char = ['#', '/']
     skip_lines_start_with_two_char = ['*/', '*\n', '*\t']    

@@ -7,15 +7,14 @@ import time
 from math import inf
 import pickle
 from collections import namedtuple, defaultdict
-from pycparser import c_parser, c_ast, c_generator, parse_file
+from pycparser import c_parser, c_ast, c_generator
 from itertools import chain, combinations
-from clean import clean_file
-from preprocessing.procedure import process_procedure
+from preprocessing.file import process_file
 
 
 lock_proc = "pthread_spin_lock"
 unlock_proc = "pthread_spin_unlock"
-thread_create_proc = "vmm_threads_create"
+thread_create_proc = "create_thread"
 
 def powerset(iterable):
     s = list(iterable)
@@ -423,13 +422,15 @@ def run_race_detection(pldpn, global_vars):
     variable_stack_d = defaultdict(list)
     for rule in pldpn.rules:
         if isinstance(rule.label, GlobalAction):
-            variable_stack_d[rule.label.variable].append((rule.label.action, \
-                                                          rule.prev_top_stack))
+            rl = (rule.label.action, rule.prev_top_stack)
+            variable_stack_d[rule.label.variable].append(rl)
     num_mautomata = 0
     epsilon = StackLetter(procedure_name=None, control_point=None)
     mautomaton_0 = get_full_mautomaton(pldpn, 0, True, False)
-    mautomaton_1 = get_full_mautomaton(pldpn, mautomaton_0.end.name+1, False, False)
-    mautomaton_2 = get_full_mautomaton(pldpn, mautomaton_1.end.name+1, False, True)
+    mautomaton_1 = get_full_mautomaton(pldpn, mautomaton_0.end.name+1,
+                                       False, False)
+    mautomaton_2 = get_full_mautomaton(pldpn, mautomaton_1.end.name+1,
+                                       False, True)
     combinations = [ (a1, s1, a2, s2, p1, p2, l1, l2)
                      for var in global_vars
                      for a1, s1 in variable_stack_d[var]
@@ -442,6 +443,7 @@ def run_race_detection(pldpn, global_vars):
     tot = len(combinations)
     i = 0
     start = time.time()
+    result = False # No data race.
     print("Combinations ", tot)
     print("Searching for errors.")
     for a1, s1, a2, s2, priority_1, priority_2, locks_1, locks_2 in combinations:
@@ -499,12 +501,14 @@ def run_race_detection(pldpn, global_vars):
 #            sys.stdout.write(". " + str(int(time.time()-start)) + " sec.")
             print(bcolors.FAIL + " DATA RACE FOUND." + bcolors.ENDC)
             print(a1, s1, a2, s2, locks_1, locks_2)
+            result = True
             break
         else:
 #            sys.stdout.write(". " + str(int(time.time()-start)) + " sec.")
             sys.stdout.write(bcolors.OKGREEN + " SAFE." + bcolors.ENDC + "\r")
             sys.stdout.flush()            
             
+    return result
 
 def run_deadlock_detection(pldpn):
     pass
