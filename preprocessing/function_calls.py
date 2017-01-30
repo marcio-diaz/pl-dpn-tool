@@ -17,7 +17,7 @@ def process_function_call(e, procedure_name, state,
     if call_name in ignore:
         pass
     
-    elif call_name == pldpn.lock_proc:
+    elif call_name == pldpn.LOCK_NAME:
         lock = get_vars(e.args).pop()
         pldpn.LOCKS.add(lock)
         state.rules.add(pldpn.PLRule(prev_top_stack=prev_top_stack,
@@ -28,7 +28,7 @@ def process_function_call(e, procedure_name, state,
         state.gamma.add(next_top_stack)                
         control_point += 1
                 
-    elif call_name == pldpn.unlock_proc:
+    elif call_name == pldpn.UNLOCK_NAME:
         lock = get_vars(e.args).pop()
         pldpn.LOCKS.add(lock)        
         state.rules.add(pldpn.PLRule(prev_top_stack=prev_top_stack,
@@ -39,9 +39,9 @@ def process_function_call(e, procedure_name, state,
         state.gamma.add(next_top_stack)                                
         control_point += 1
                 
-    elif call_name == pldpn.thread_create_proc:
-        new_thread_procedure = e.args.exprs[0].name
-        priority = int(e.args.exprs[1].value)
+    elif call_name == pldpn.THREAD_NAME:
+        new_thread_procedure = e.args.exprs[pldpn.THREAD_CONFIG[pldpn.THREAD_NAME][0]].name
+        priority = int(e.args.exprs[pldpn.THREAD_CONFIG[pldpn.THREAD_NAME][1]].value)
         pl_structure = pldpn.PLStructure(ltp=inf, hfp=priority,
                                          gr=tuple(), ga=tuple(), la=tuple())
         state.control_states.add(pldpn.ControlState(priority=priority, locks=tuple(),

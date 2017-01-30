@@ -1,0 +1,2 @@
+create_thread 0 1
+vmm_threads_create 1 3
