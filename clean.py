@@ -31,6 +31,7 @@ def clean_file(filename):
     skip_lines_with = ['DEFINE_PER_CPU', 'asm']
     delete_words = ['__initdata','__cpuinit', '__noreturn', '__init',
                     '__exit', '__notrace', '__weak', '__read_mostly',
+                    '__attribute\(.*\)', '__extension__', '__inline',
                     'VMM_DEVTREE_PATH_SEPARATOR_STRING,',                    
                     'VMM_DEVTREE_PATH_SEPARATOR_STRING',
                     'struct vmm_semaphore_resource,',

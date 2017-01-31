@@ -60,11 +60,11 @@ def process_function_call(e, procedure_name, state,
         label = None
         if isinstance(e.args.exprs[0].left, c_ast.ID):
             var = e.args.exprs[0].left.name
-            if var in pldpn.global_vars:
+            if var in state.global_vars:
                 label = pldpn.GlobalAction(action="read", variable=var)
         if isinstance(e.args.exprs[0].right, c_ast.ID):
             var = e.args.exprs[0].right.name
-            if var in pldpn.global_vars:
+            if var in state.global_vars:
                 label = pldpn.GlobalAction(action="read", variable=var)
         if label is not None:
             state.rules.add(pldpn.PLRule(prev_top_stack=prev_top_stack, label=label,

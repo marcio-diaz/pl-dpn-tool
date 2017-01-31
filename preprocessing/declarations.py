@@ -11,7 +11,7 @@ def process_declaration(ast_node, procedure_name, state,
         if ast_node.init.name in state.global_vars:
             var = ast_node.init.name
             label = pldpn.GlobalAction(action="read", variable=var)
-            rules.add(pldpn.PLRule(prev_top_stack=prev_top_stack, label=label,
+            state.rules.add(pldpn.PLRule(prev_top_stack=prev_top_stack, label=label,
                                    next_top_stack=next_top_stack))
             state.gamma.add(prev_top_stack)
             state.gamma.add(next_top_stack)                                    
