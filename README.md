@@ -38,7 +38,7 @@ For running the tests you can do:
 ### Architecture
 <img src="architecture.png" width="650">
 
-The tool executes fourth steps in order to analize the program:
+The tool executes four steps in order to analize the program:
 
 1. Parsing of C code.
    This step returns an AST (Abstract Syntax Tree) of the program.
