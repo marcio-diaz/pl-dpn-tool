@@ -51,7 +51,7 @@ ReturnAction = namedtuple("Return", [])
 
 FUNCTION_PRIORITY = {'main': 1}
 
-NON_ZERO_PRIORITIES = [1]
+NON_ZERO_PRIORITIES = [1, 2]
 LOCKS = set()
 
 
@@ -101,7 +101,7 @@ def update(priority, label, pls):
     elif isinstance(label, LockAction) and label.action == 'rel':
         lock_info = LockInfo(action=action, lock=label.lock,
                              p1=priority, p2=min(pls.ltp, pls.hfp))
-        upd_pls = PLStructure(ltp=pls.ltp, hfp=pls.hfp,
+        upd_pls = PLStructure(ltp=min(priority, pls.ltp), hfp=pls.hfp,
                               gr=pls.gr, ga=pls.ga, la=pls.la + (lock_info,))
         return upd_pls
 
@@ -112,7 +112,7 @@ def update(priority, label, pls):
         ga = set(pls.ga)
         ga |= set([(label.lock, t.lock) for t in pls.la if t.action == 'usg'])
         ga = tuple(pls.ga)
-        upd_pls = PLStructure(ltp=pls.ltp, hfp=pls.hfp, gr=pls.gr, ga=ga,
+        upd_pls = PLStructure(ltp=min(priority, pls.ltp), hfp=pls.hfp, gr=pls.gr, ga=ga,
                               la=pls.la + (lock_info,))
         return upd_pls
     
@@ -126,7 +126,7 @@ def update(priority, label, pls):
         gr |= set([(label.lock, t.lock) for t in pls.la if t.action == 'rel'])
         gr = tuple(pls.gr)
 
-        upd_pls = PLStructure(ltp=pls.ltp, hfp=pls.hfp, gr=pls.gr, ga=pls.ga,
+        upd_pls = PLStructure(ltp=min(priority, pls.ltp), hfp=pls.hfp, gr=pls.gr, ga=pls.ga,
                               la=la)
         return upd_pls
     assert(False)
@@ -139,6 +139,7 @@ def compose(pl_structure_1, pl_structure_2):
 
     if not (hfp2 <= ltp1 and ltp1 <= ltp2) and not (hfp1 <= ltp2 and ltp2 <= ltp1):
         return False
+
 
     for e in la1:
         if e.action == 'acq' or e.action == 'rel':
@@ -460,7 +461,7 @@ def run_race_detection(pldpn, global_vars):
         sys.stdout.flush()
         i += 1
         # First configuration.
-        pl_structure_1 = PLStructure(ltp=inf, hfp=priority_1, gr=tuple(), ga=tuple(),
+        pl_structure_1 = PLStructure(ltp=priority_1, hfp=priority_1, gr=tuple(), ga=tuple(),
                                      la=tuple())
         control_state_1  = ControlState(priority=priority_1, locks=tuple(locks_1),
                                         pl_structure=pl_structure_1)
@@ -471,7 +472,7 @@ def run_race_detection(pldpn, global_vars):
         edge_2 = MAEdge(start=node_1, label=s1, end=mautomaton_1.init)
         
         # Second configuration.
-        pl_structure_2 = PLStructure(ltp=inf, hfp=priority_2, gr=tuple(), ga=tuple(),
+        pl_structure_2 = PLStructure(ltp=priority_2, hfp=priority_2, gr=tuple(), ga=tuple(),
                                      la=tuple())
         control_state_2 = ControlState(priority=priority_2, locks=tuple(locks_2),
                                        pl_structure=pl_structure_2)
@@ -508,8 +509,8 @@ def run_race_detection(pldpn, global_vars):
         if check_initial(mautomaton):
 #            sys.stdout.write(". " + str(int(time.time()-start)) + " sec.")
             print(bcolors.FAIL + " DATA RACE FOUND." + bcolors.ENDC)
-            print("The procedures {} and {} race on variable {} at control points {} and {}, respectively."
-                  .format(s1.procedure_name, s2.procedure_name, var, s1.control_point, s2.control_point))
+            print("The procedures {} and {} race on variable {} at control points {} and {}, respectively. {} {}"
+                  .format(s1.procedure_name, s2.procedure_name, var, s1.control_point, s2.control_point, priority_1, priority_2))
             result = True
             break
         else:
@@ -629,6 +630,7 @@ def apply_rule(places, rule):
         for (start_node, next_node, control_state) in places[new_stack_letter]:
             new_pl_structure = update(control_state.priority, rule.label,
                                       control_state.pl_structure)
+            
             new_control_state = ControlState(control_state.priority,
                                              control_state.locks, new_pl_structure)
             start_node_cpy = MANode(name=start_node.name, initial=False, end=False,
@@ -645,6 +647,7 @@ def apply_rule(places, rule):
         for (start_node, next_node, control_state) in places[rule.next_top_stack]:
             new_pl_structure = update(control_state.priority, rule.label,
                                       control_state.pl_structure)
+            
             new_control_state = ControlState(control_state.priority,
                                              control_state.locks,
                                              new_pl_structure)
@@ -695,7 +698,6 @@ def apply_rule(places, rule):
         for (start_node, next_node, (cs1, cs2)) in places[path]:
             if cs1.priority != rule.label.priority or len(cs1.locks) != 0:
                 continue
-
             new_pl_structure = compose(cs1.pl_structure, cs2.pl_structure)
             new_pl_structure = update(cs2.priority, rule.label, new_pl_structure)
             new_control_state = ControlState(cs2.priority, cs2.locks,
@@ -714,7 +716,7 @@ def apply_rule(places, rule):
         for (start_node, next_node, cs2) in places[rule.next_top_stack]:
             cs1 = ControlState(rule.label.priority,
                                tuple(),
-                               PLStructure(inf, 0, tuple(), tuple(), tuple()))
+                               PLStructure(inf, rule.label.priority, tuple(), tuple(), tuple()))
             new_pl_structure = compose(cs1.pl_structure, cs2.pl_structure)
             new_pl_structure = update(cs2.priority, rule.label, new_pl_structure)
             new_control_state = ControlState(cs2.priority, cs2.locks,
@@ -736,7 +738,7 @@ def apply_rule(places, rule):
             for priority in NON_ZERO_PRIORITIES:
                 cs2 = ControlState(priority,
                                    tuple(),
-                                   PLStructure(inf, 0, tuple(),
+                                   PLStructure(inf, priority, tuple(),
                                                tuple(), tuple()))
                 new_pl_structure = compose(cs1.pl_structure, cs2.pl_structure)
                 new_pl_structure = update(cs2.priority, rule.label,

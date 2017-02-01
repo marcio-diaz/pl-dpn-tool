@@ -3332,11 +3332,11 @@ static void VirtualizeTimerC_0_updateFromTimer_runTask( void )
   {
     if(min_remaining <= 0)
     {
-      VirtualizeTimerC_0_fireTimers(now);
+      //      VirtualizeTimerC_0_fireTimers(now);
     }
     else 
     {
-      VirtualizeTimerC_0_TimerFrom_startOneShotAt(now, min_remaining);
+      //      VirtualizeTimerC_0_TimerFrom_startOneShotAt(now, min_remaining); unwanted race on AlarmToTimerC_0_m_dt with AlarmToTimerC_0_start
     }
   }
 }
