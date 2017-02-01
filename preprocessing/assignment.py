@@ -28,7 +28,9 @@ def process_assignment(e, procedure_name, state, control_point):
         state.rules.add(pldpn.PLRule(prev_top_stack=prev_top_stack, label=label,
                                      next_top_stack=next_top_stack))
         state.gamma.add(prev_top_stack)
-        state.gamma.add(next_top_stack)                                    
-    control_point += 1
+        state.gamma.add(next_top_stack)
+        
+    if len(glva) != 0 or len(grva) != 0:
+        control_point += 1
     return control_point    
 

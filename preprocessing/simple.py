@@ -31,8 +31,8 @@ def process_simple(ast_node, procedure_name, state, control_point):
         control_point = process_if_stmt(ast_node, procedure_name, state,
                                         control_point)
     elif isinstance(ast_node, c_ast.FuncCall):
-        control_point = process_function_call(ast_node, procedure_name, state,
-                                              control_point)
+        control_point = process_function_call(ast_node, procedure_name,
+                                              state, control_point)
     elif isinstance(ast_node, c_ast.Decl):
         control_point = process_declaration(ast_node, procedure_name,
                                             state, control_point)

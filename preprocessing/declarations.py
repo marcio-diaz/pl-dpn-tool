@@ -16,4 +16,18 @@ def process_declaration(ast_node, procedure_name, state,
             state.gamma.add(prev_top_stack)
             state.gamma.add(next_top_stack)                                    
             control_point += 1
+
+    if isinstance(ast_node.init, c_ast.UnaryOp):
+        if ast_node.init.op == "&": # Workaround: getting a pointer is a write.
+            if isinstance(ast_node.init.expr, c_ast.ArrayRef):
+                if ast_node.init.expr.name.name in state.global_vars:
+                    var = ast_node.init.expr.name.name
+                    label = pldpn.GlobalAction(action="write", variable=var)
+                    state.rules.add(pldpn.PLRule(prev_top_stack=prev_top_stack,
+                                                 label=label,
+                                                 next_top_stack=next_top_stack))
+                    state.gamma.add(prev_top_stack)
+                    state.gamma.add(next_top_stack) 
+                    control_point += 1
+                    
     return control_point

@@ -24,7 +24,7 @@ def print_stats(state):
         print("# Return rules: ", len([r for r in state.rules
                                             if isinstance(r.label,
                                                 ReturnAction)]))
-        print("Global vars: ", state.global_vars)
+        print("# Global vars: ", len(state.global_vars))
 
 
         
@@ -47,6 +47,7 @@ if __name__ == "__main__":
     if args.filename:
         state = State()
         process_file(args.filename, state)
+        state.global_vars = sorted([i for i in state.global_vars if i])
         pldpn = PLDPN(control_states=state.control_states,
                       gamma=state.gamma,
                       rules=state.rules,
@@ -66,6 +67,7 @@ if __name__ == "__main__":
             sys.stdout.flush()
             process_file(filename, state)
         print("Parsing of files completed." + " " * 50)
+        state.global_vars = sorted([i for i in state.global_vars if i])        
         if args.stats:
                 print_stats(state)
         pldpn = PLDPN(control_states=state.control_states,

@@ -41,6 +41,8 @@ def process_function_call(e, procedure_name, state,
                 
     elif call_name == pldpn.THREAD_NAME:
         new_thread_procedure = e.args.exprs[pldpn.THREAD_CONFIG[pldpn.THREAD_NAME][0]].name
+        print("thread: ", new_thread_procedure)
+        
         priority = int(e.args.exprs[pldpn.THREAD_CONFIG[pldpn.THREAD_NAME][1]].value)
         pl_structure = pldpn.PLStructure(ltp=inf, hfp=priority,
                                          gr=tuple(), ga=tuple(), la=tuple())

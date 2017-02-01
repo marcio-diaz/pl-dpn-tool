@@ -459,7 +459,6 @@ def run_race_detection(pldpn, global_vars):
         sys.stdout.write("\t" + str((i*100)//tot) + "%")
         sys.stdout.flush()
         i += 1
-
         # First configuration.
         pl_structure_1 = PLStructure(ltp=inf, hfp=priority_1, gr=tuple(), ga=tuple(),
                                      la=tuple())
@@ -643,6 +642,23 @@ def apply_rule(places, rule):
             places[rule.prev_top_stack].add((start_node, next_node,
                                              new_control_state))
             
+        for (start_node, next_node, control_state) in places[rule.next_top_stack]:
+            new_pl_structure = update(control_state.priority, rule.label,
+                                      control_state.pl_structure)
+            new_control_state = ControlState(control_state.priority,
+                                             control_state.locks,
+                                             new_pl_structure)
+            start_node_cpy = MANode(name=start_node.name, initial=False, end=False,
+                                    control_state=new_control_state)
+            new_edge_0 = MAEdge(start=start_node, label=new_control_state,
+                                end=start_node_cpy)
+            new_edge_1 = MAEdge(start=start_node_cpy, label=rule.prev_top_stack,
+                                end=next_node)
+            new_edges.add(new_edge_0)
+            new_edges.add(new_edge_1)
+            places[rule.prev_top_stack].add((start_node, next_node,
+                                             new_control_state))
+
         return new_edges, places
     elif isinstance(rule.label, LockAction):
         new_edges = set()
