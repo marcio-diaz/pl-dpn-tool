@@ -14,5 +14,3 @@ def process_file(filename, state):
     for procedure_name, procedure_ast in procedures.items():
         # control_point = 0
         process_procedure(procedure_ast, procedure_name, state, 0)
-                    
-                                                                                        
