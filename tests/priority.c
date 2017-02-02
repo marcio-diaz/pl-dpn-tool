@@ -1,6 +1,6 @@
 #include "settings.h"
 
-int x = 0;
+//int x = 0;
 
 void *A(void *arg) {
   x++;
@@ -17,7 +17,7 @@ void *B(void *arg) {
 int main() {
   init_main_thread(1);
 
-  create_thread(A, 2);
+  create_thread(A, 1);
   x++;
   
   end_main_thread();
