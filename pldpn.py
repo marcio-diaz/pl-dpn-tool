@@ -509,8 +509,8 @@ def run_race_detection(pldpn, global_vars):
         if check_initial(mautomaton):
 #            sys.stdout.write(". " + str(int(time.time()-start)) + " sec.")
             print(bcolors.FAIL + " DATA RACE FOUND." + bcolors.ENDC)
-            print("The procedures {} and {} race on variable {} at control points {} and {}, respectively. {} {}"
-                  .format(s1.procedure_name, s2.procedure_name, var, s1.control_point, s2.control_point, priority_1, priority_2))
+            print("The procedures {} and {} race on variable {} at control points {} and {}, respectively."
+                  .format(s1.procedure_name, s2.procedure_name, var, s1.control_point, s2.control_point))
             result = True
             break
         else:
