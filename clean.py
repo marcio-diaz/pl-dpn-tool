@@ -16,7 +16,8 @@ def clean_file(filename):
     f_read = open(filename + "_without_comments", 'r')
     f_write = open(filename + '_clean', 'w')
     to_define = ['vmm_spinlock_t', 'u64', 'u16', 'bool', 'arch_regs_t',
-                 'vmm_rwlock_t', 'resource_size_t', 'loff_t',
+                 'vmm_rwlock_t', 'resource_size_t', 'loff_t', 'int_T',
+                 'real_T',
                  'irq_flags_t', 'u32', 'pthread_t', 'vmm_scheduler_ctrl',
                  'virtual_addr_t', 'u8', 'virtual_size_t', 'physical_addr_t',
                  'physical_size_t', 'atomic_t', 'vmm_iommu_fault_handler_t',
@@ -24,7 +25,9 @@ def clean_file(filename):
                  'vmm_dr_match_t', 'vmm_clocksource_init_t', 's64', 'va_list',
                  'vmm_host_irq_handler_t', 'vmm_host_irq_function_t',
                  'vmm_host_irq_init_t', 'Elf_Ehdr', 'Elf_Shdr', 'Elf_Sym', 's16',
-                 'vmm_clockchip_init_t', 'pthread_spinlock_t']
+                 'vmm_clockchip_init_t', 'pthread_spinlock_t',
+                 'ExtU_brake_acc_nodiv_ctrl_T',
+                 'B_brake_acc_nodiv_ctrl_T']
     new_file_lines = ['typedef int {};'.format(t) for t in to_define]
     skip_lines_start_with_char = ['#', '/']
     skip_lines_start_with_two_char = ['*/', '*\n', '*\t']    
