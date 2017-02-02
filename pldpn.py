@@ -738,7 +738,7 @@ def apply_rule(places, rule):
             for priority in NON_ZERO_PRIORITIES:
                 cs2 = ControlState(priority,
                                    tuple(),
-                                   PLStructure(inf, priority, tuple(),
+                                   PLStructure(inf, 0, tuple(),
                                                tuple(), tuple()))
                 new_pl_structure = compose(cs1.pl_structure, cs2.pl_structure)
                 new_pl_structure = update(cs2.priority, rule.label,
