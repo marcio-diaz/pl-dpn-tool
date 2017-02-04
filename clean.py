@@ -38,7 +38,7 @@ def clean_file(filename):
                     'VMM_DEVTREE_PATH_SEPARATOR_STRING,',                    
                     'VMM_DEVTREE_PATH_SEPARATOR_STRING',
                     'struct vmm_semaphore_resource,',
-                    'VMM_EXPORT_SYMBOL\(.*\);',
+                    'VMM_EXPORT_SYMBOL\(.*\);', '__attribute__\(.*\)',
                     'VMM_DECLARE_MODULE\(.*\);',
                     'vmm_early_param\(.*\);',
                     'DECLARE_COMPLETION\(.*\);',

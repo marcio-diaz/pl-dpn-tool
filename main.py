@@ -61,6 +61,8 @@ if __name__ == "__main__":
                                 + '/**/*.c', recursive=True)]
         state = State()
         for i, filename in enumerate(c_files):
+            if "vmm_net.c" in filename:
+                    continue
             sys.stdout.write("Parsing {} of {}: {}"
                              .format(i+1, len(c_files), filename)
                              + " " * 50 +"\r")
