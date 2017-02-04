@@ -51,7 +51,7 @@ ReturnAction = namedtuple("Return", [])
 
 FUNCTION_PRIORITY = {'main': 1}
 
-NON_ZERO_PRIORITIES = [1, 2]
+NON_ZERO_PRIORITIES = set()
 LOCKS = set()
 
 
