@@ -1,9 +1,9 @@
-12#!/usr/bin/python3
+#!/usr/bin/python3
 import pldpn
 from pldpn import *
 import argparse
 import glob
-
+import os
 
 def print_stats(state):
         
@@ -57,8 +57,11 @@ if __name__ == "__main__":
         run_race_detection(pldpn, state.global_vars)
 
     if args.directory:
-        c_files = [file for file in glob.glob(args.directory
-                                + '/**/*.c', recursive=True)]
+            
+#        c_files = [file for file in glob.glob(args.directory
+#                                + '/**/*.c', recursive=True)]
+        c_files = [y for x in os.walk(args.directory) 
+                   for y in glob.glob(os.path.join(x[0], '*.c'))]
         state = State()
         for i, filename in enumerate(c_files):
             if "vmm_net.c" in filename:

@@ -3,13 +3,14 @@
 import sys
 import copy
 import time
-from math import inf
+#from math import inf
 import pickle
 from collections import namedtuple, defaultdict
 from pycparser import c_parser, c_ast, c_generator
 from itertools import chain, combinations
-from preprocessing.file import process_file
+from file import process_file
 
+inf = 10
 
 LOCK_NAME = 'pthread_spin_lock'
 UNLOCK_NAME = 'pthread_spin_unlock'

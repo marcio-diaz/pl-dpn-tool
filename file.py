@@ -1,6 +1,6 @@
 from pycparser import c_ast, parse_file
 from clean import clean_file
-from preprocessing.procedure import process_procedure
+from procedure import process_procedure
 
 def process_file(filename, state):
     clean_file(filename)

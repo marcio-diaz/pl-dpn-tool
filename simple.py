@@ -1,9 +1,9 @@
 from pycparser import c_ast
-from preprocessing.function_calls import process_function_call
-from preprocessing.declarations import process_declaration
-from preprocessing.unary_operator import process_unary_operator
-from preprocessing.if_stmt import process_if_stmt
-from preprocessing.assignment import process_assignment
+from function_calls import process_function_call
+from declarations import process_declaration
+from unary_operator import process_unary_operator
+from if_stmt import process_if_stmt
+from assignment import process_assignment
 
 
 def process_compound(ast_node, procedure_name, state,

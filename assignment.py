@@ -1,7 +1,7 @@
 import pldpn
 from pycparser import c_ast
 from utilities import get_vars
-from .function_calls import process_function_call
+from function_calls import process_function_call
 
 def process_assignment(e, procedure_name, state, control_point):
     lvs = get_vars(e.lvalue)

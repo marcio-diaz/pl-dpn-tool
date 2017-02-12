@@ -1,7 +1,9 @@
-from math import inf
+
 import pldpn
 from utilities import get_vars
 from pycparser import c_ast
+
+inf = 10
 
 def process_function_call(e, procedure_name, state,
                           control_point):

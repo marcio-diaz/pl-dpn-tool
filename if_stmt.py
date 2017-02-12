@@ -1,5 +1,5 @@
 from pycparser import c_ast
-from preprocessing import simple
+import simple
 
 def process_if_stmt(ast_node, procedure_name, state, control_point):
     if ast_node.iftrue is not None:
