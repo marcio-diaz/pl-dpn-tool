@@ -457,13 +457,14 @@ def run_race_detection(pldpn, global_vars):
     start = time.time()
     result = False # No data race.
     print("Searching for errors.")
-    for var, a1, s1, a2, s2, priority_1, priority_2, locks_1, locks_2 in combinations:
+    for var, a1, s1, a2, s2, priority_1, priority_2, locks_1, locks_2 \
+        in combinations:
         sys.stdout.write("\t" + str((i*100)//tot) + "%")
         sys.stdout.flush()
         i += 1
         # First configuration.
-        pl_structure_1 = PLStructure(ltp=priority_1, hfp=priority_1, gr=tuple(), ga=tuple(),
-                                     la=tuple())
+        pl_structure_1 = PLStructure(ltp=priority_1, hfp=priority_1, 
+                                     gr=tuple(), ga=tuple(), la=tuple())
         control_state_1  = ControlState(priority=priority_1, locks=tuple(locks_1),
                                         pl_structure=pl_structure_1)
         node_1 = MANode(name=mautomaton_2.end.name+1, initial=True, end=False,
@@ -473,8 +474,8 @@ def run_race_detection(pldpn, global_vars):
         edge_2 = MAEdge(start=node_1, label=s1, end=mautomaton_1.init)
         
         # Second configuration.
-        pl_structure_2 = PLStructure(ltp=priority_2, hfp=priority_2, gr=tuple(), ga=tuple(),
-                                     la=tuple())
+        pl_structure_2 = PLStructure(ltp=priority_2, hfp=priority_2, 
+                                     gr=tuple(), ga=tuple(), la=tuple())
         control_state_2 = ControlState(priority=priority_2, locks=tuple(locks_2),
                                        pl_structure=pl_structure_2)
         node_2 = MANode(name=node_1.name+1, initial=False, end=False,
@@ -494,9 +495,11 @@ def run_race_detection(pldpn, global_vars):
         edges |= set(mautomaton_1.edges)
         edges |= set(mautomaton_2.edges)
         source_nodes = set([mautomaton_0.end, mautomaton_1.end, mautomaton_0.init,
-                            mautomaton_1.init, mautomaton_2.init, mautomaton_2.end])
+                            mautomaton_1.init, mautomaton_2.init, 
+                            mautomaton_2.end])
         mautomaton = MAutomaton(init=mautomaton_0.init, end=mautomaton_2.end,
-                                nodes=nodes, edges=edges, source_nodes=source_nodes)
+                                nodes=nodes, edges=edges, 
+                                source_nodes=source_nodes)
         # Draw the automaton to a file.
         #  mautomaton_draw(mautomaton, "initial_"
         # + str(num_mautomata))
@@ -510,8 +513,10 @@ def run_race_detection(pldpn, global_vars):
         if check_initial(mautomaton):
 #            sys.stdout.write(". " + str(int(time.time()-start)) + " sec.")
             print(bcolors.FAIL + " DATA RACE FOUND." + bcolors.ENDC)
-            print("The procedures {} and {} race on variable {} at control points {} and {}, respectively."
-                  .format(s1.procedure_name, s2.procedure_name, var, s1.control_point, s2.control_point))
+            print("The procedures {} and {} race on variable {}"
+                  " at control points {} and {}, respectively."
+                  .format(s1.procedure_name, s2.procedure_name, var, 
+                          s1.control_point, s2.control_point))
             result = True
             break
         else:
@@ -534,8 +539,9 @@ def check_initial(mautomaton):
            not isinstance(top_stack, StackLetter):
             continue
         
-        if top_stack.procedure_name == "main" and top_stack.control_point == 0 and\
-           end.end and len(control_state.locks) == 0 and control_state.priority == 1:
+        if top_stack.procedure_name == "main" and top_stack.control_point == 0 \
+           and end.end and len(control_state.locks) == 0 \
+           and control_state.priority == 1:
             if control_state.pl_structure:
                 return True
     return False
