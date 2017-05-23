@@ -1,6 +1,6 @@
-# Alfajor
+# PL-DPN Tool
 
-Alfajor is a tool for reachability analysis of concurrent C programs
+PL-DPN is a tool for reachability analysis of concurrent C programs
 using locks and priorities for the synchronization of threads.
 It can handle automatically the detection of data races and deadlocks.
 
