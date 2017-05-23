@@ -1,8 +1,11 @@
 # PL-DPN Tool
 
-PL-DPN is a tool for reachability analysis of concurrent C programs
-using locks and priorities for the synchronization of threads.
-It can handle automatically the detection of data races and deadlocks.
+PL-DPN is a tool for reachability analysis of
+concurrent C programs
+that use locks and priorities for the
+synchronization of threads.
+It can handle automatically the detection of
+data races and deadlocks.
 
 ## Getting Started
 
@@ -21,11 +24,11 @@ Then using *pip3* we install **pycparser**:
 
 ### Running
 
-For running the tool either over a C file or over a complete directory:
+For running the tool over a C source file:
 
 > ./main.py -f tests/small_race.c
 
-Or
+or over an entire directory with C source files:
 
 > ./main.py -d ./xvisor/core/
 
